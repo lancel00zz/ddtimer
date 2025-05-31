@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Facilitator Timer</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #d0f0ff;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .dot-column {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .left-dots {
+      bottom: 40px;
+      left: 20px;
+      align-items: flex-start;
+    }
+
+    .right-dots {
+      bottom: 40px;
+      right: 20px;
+      align-items: flex-end;
+    }
+
+    .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+
+    .red {
+      background-color: red;
+    }
+
+    .green {
+      background-color: green;
+    }
+
+    .center {
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding-top: 40px;
+    }
+
+    .timer-display {
+      font-size: 30vw;
+      margin: 0;
+      line-height: 1;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    button {
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #e0e0e0;
+      cursor: pointer;
+    }
+
+    .qr-section {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .qr-section img {
+      width: 140px;
+      height: 140px;
+    }
+
+    .qr-label {
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .flashing-red {
+      color: red;
+      animation: flash 1s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="left-dots" class="dot-column left-dots"></div>
+
+    <div class="center">
+      <h1 id="timer-display" class="timer-display">00:00</h1>
+      <div class="buttons">
+        <button id="start-button">Start</button>
+        <button id="pause-button" disabled>Pause</button>
+        <button id="options-button" title="Open Settings">⚒️</button>
+        <button id="reset-button" title="Reset App">Reset</button>
+      </div>
+
+      <div class="qr-section">
+        <img src="/qr-image" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
+        <div class="qr-label">Scan this QR code when finished!</div>
+      </div>
+    </div>
+
+    <div id="right-dots" class="dot-column right-dots"></div>
+  </div>
+
+  <script>
+    let totalSeconds = 0;
+    let intervalId = null;
+    let lastSeenCount = 0;
+
+    const optionsBtn = document.getElementById("options-button");
+    const startBtn = document.getElementById("start-button");
+    const pauseBtn = document.getElementById("pause-button");
+    const resetBtn = document.getElementById("reset-button");
+    const timerDisplay = document.getElementById("timer-display");
+
+    startBtn.disabled = true;
+    resetBtn.disabled = true;
+
+    optionsBtn.onclick = openSettings;
+
+    startBtn.addEventListener("click", () => {
+      if (intervalId || totalSeconds <= 0) return;
+
+      intervalId = setInterval(() => {
+        totalSeconds--;
+        updateTimerDisplay();
+
+        if (totalSeconds <= 0) {
+          clearInterval(intervalId);
+          intervalId = null;
+          pauseBtn.disabled = true;
+          startBtn.disabled = false;
+
+          // 🔴 Flashing red timer on timeout
+          timerDisplay.textContent = "00:00";
+          timerDisplay.classList.add("flashing-red");
+        }
+      }, 1000);
+
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+    });
+
+    pauseBtn.addEventListener("click", () => {
+      clearInterval(intervalId);
+      intervalId = null;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+    });
+
+    resetBtn.addEventListener("click", () => {
+      clearInterval(intervalId);
+      intervalId = null;
+      totalSeconds = 0;
+      lastSeenCount = 0;
+
+      timerDisplay.textContent = "00:00";
+      timerDisplay.style.color = "";
+      timerDisplay.style.fontWeight = "";
+      timerDisplay.classList.remove("flashing-red");
+
+      document.getElementById("left-dots").innerHTML = "";
+      document.getElementById("right-dots").innerHTML = "";
+
+      startBtn.disabled = true;
+      pauseBtn.disabled = true;
+      resetBtn.disabled = true;
+    });
+
+    function openSettings() {
+      window.open("/settings", "_blank", "width=500,height=400,resizable=yes");
+    }
+
+    function openQrPopup() {
+      window.open("/qr-popup", "_blank", "width=500,height=600,resizable=yes");
+    }
+
+    function formatTime(mins, secs) {
+      const m = String(mins).padStart(2, '0');
+      const s = String(secs).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      timerDisplay.textContent = formatTime(mins, secs);
+    }
+
+    async function checkForNewScans() {
+      try {
+        const res = await fetch("/ping");
+        const count = parseInt(await res.text(), 10);
+
+        if (count > lastSeenCount) {
+          const redDot = document.querySelector("#left-dots .dot.red");
+          if (redDot) {
+            redDot.classList.remove("red");
+            redDot.classList.add("green");
+            document.getElementById("right-dots").appendChild(redDot);
+            lastSeenCount = count;
+          }
+        }
+
+        const remainingRedDots = document.querySelectorAll("#left-dots .dot.red").length;
+        if (remainingRedDots === 0 && lastSeenCount > 0) {
+          clearInterval(intervalId);
+          intervalId = null;
+          timerDisplay.textContent = "🏁";
+          timerDisplay.style.color = "green";
+          timerDisplay.style.fontWeight = "bold";
+          timerDisplay.classList.remove("flashing-red");
+          startBtn.disabled = true;
+          pauseBtn.disabled = true;
+          resetBtn.disabled = false;
+        }
+      } catch (err) {
+        console.error("Error pinging for scans:", err);
+      }
+    }
+
+    setInterval(checkForNewScans, 2000);
+
+    window.addEventListener("message", function (event) {
+      console.log("🟢 Received message from settings:", event.data);
+      if (event.data.type === "settings") {
+        const { minutes, teams } = event.data;
+
+        if (typeof minutes === "number" && !isNaN(minutes)) {
+          totalSeconds = minutes * 60;
+          updateTimerDisplay();
+          timerDisplay.style.color = "";
+          timerDisplay.style.fontWeight = "";
+          timerDisplay.classList.remove("flashing-red");
+          startBtn.disabled = false;
+          resetBtn.disabled = false;
+        }
+
+        if (typeof teams === "number" && !isNaN(teams)) {
+          const leftDots = document.getElementById("left-dots");
+          const rightDots = document.getElementById("right-dots");
+
+          leftDots.innerHTML = "";
+          rightDots.innerHTML = "";
+          lastSeenCount = 0;
+
+          fetch("/reset", { method: "POST" });
+
+          for (let i = 0; i < teams; i++) {
+            const dot = document.createElement("div");
+            dot.classList.add("dot", "red");
+            leftDots.appendChild(dot);
+          }
+        }
+
+        console.log("✔️ Settings applied:", event.data);
+      }
+    });
+  </script>
+</body>
+</html>

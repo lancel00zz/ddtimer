@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  facilitator:
+    build: .
+    ports:
+      - "5050:5050"
+    volumes:
+      - .:/app
+    environment:
+      - FLASK_ENV=development
+      - HOST_IP=${HOST_IP}
