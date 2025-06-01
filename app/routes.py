@@ -37,8 +37,7 @@ def done():
 
 @main.route("/ping")
 def ping():
-    global scan_count
-    return str(scan_count)
+    return "OK"
 
 @main.route("/reset", methods=["POST"])
 def reset():
