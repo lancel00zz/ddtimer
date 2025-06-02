@@ -1,9 +1,22 @@
+## This docker-compose.dev.yml file makes a development environmetn
+## out of the last docker image (:latest). It creates:
+##  - a baked image containing already the /app files (:latest)
+## - overwrites the /app files of the baked image by mounting the /app structure of the 
+##   working environment on the hard disk
+## Now it is ready to become a development environment. For instance, if you make changes 
+## to popup.html on the
+## hard disk, it will be reflected in the app live
+##
+## how to run (in order to create container and make it live):
+## HOST_IP=$(ipconfig getifaddr en0) docker compose -f docker-compose.dev.yml up
+## ------------------- end ----------------
 services:
   facilitator:
-    image: facilitator-dev
+    image: lancel00zz/facilitator-timer-app:latest
     ports:
       - "5050:5050"
     volumes:
+    ## it loads my dev environment folders inside the container - so it is a direct and live link to them
       - ./app:/app/app
       - ./config:/app/config
     environment:

@@ -1,7 +1,0 @@
-services:
-  facilitator:
-    image: lancel00zz/facilitator-timer-app:v2
-    ports:
-      - "5050:5050"
-    environment:
-      - HOST_IP=${HOST_IP}
