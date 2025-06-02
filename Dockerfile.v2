@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 1) Copy only requirements.txt for caching
+COPY requirements.txt /app/
+
+# 2) Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 3) Now copy the rest of your app (routes, templates, static, config, run.py, etc.)
+COPY . /app
+
+# 4) Export the correct Flask environment and port
+ENV FLASK_APP=run.py
+EXPOSE 5050
+
+# 5) Launch Flask in production or debug mode
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5050"]

@@ -1,7 +1,9 @@
+
 services:
   facilitator:
-    image: lancel00zz/facilitator-timer-app:latest
-    ports:
-      - "5050:5050"
+    image: lancel00zz/facilitator-timer-app:${TAG:-latest}
     environment:
       - HOST_IP=${HOST_IP}
+    ports:
+      - "5050:5050"
+    restart: unless-stopped

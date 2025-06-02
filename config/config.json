@@ -1,24 +1,7 @@
 {
   "ui": {
-    "default_timer_minutes": 20,
-    "font_family": "Courier New",
-    "background_color": "#d0f0ff"
-  },
-  "dots": {
-    "red_dot": {
-      "enabled": true,
-      "image": "redpacman.png"
-    },
-    "green_dot": {
-      "enabled": false,
-      "image": "greenpacman.png"
-    }
-  },
-  "qr": {
-    "label": "Scan this QR code when finished!",
-    "popup_size": {
-      "width": 500,
-      "height": 600
-    }
+    "background_image": "cannes.png",
+    "background_color": null,
+    "font_family": "Courier New"
   }
 }

@@ -125,13 +125,15 @@
       <div class="buttons">
         <button id="start-button">Start</button>
         <button id="pause-button" disabled>Pause</button>
-        <button id="options-button" title="Open Settings">⚒️</button>
+        <button id="options-button" title="Open Settings">⏰</button>
         <button id="reset-button" title="Reset App">Reset</button>
+        <span style="margin-left: 20px;"></span> <!-- ← extra spacing -->
+        <button id="config-button" title="View Config">Config</button>
       </div>
 
       <div class="qr-section">
         <img src="/qr-image" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
-        <div class="qr-label">Scan this QR code when finished!</div>
+        <div class="qr-label">(c) Patrick Zakher - 2025 - TimerFacilitator v2.0</div>
       </div>
     </div>
 
@@ -140,39 +142,37 @@
 
   <script>
     let totalSeconds = 0;
-    let intervalId = null;
+    let intervalId    = null;
     let lastSeenCount = 0;
 
-    const optionsBtn = document.getElementById("options-button");
-    const startBtn = document.getElementById("start-button");
-    const pauseBtn = document.getElementById("pause-button");
-    const resetBtn = document.getElementById("reset-button");
+    const optionsBtn   = document.getElementById("options-button");
+    const startBtn     = document.getElementById("start-button");
+    const pauseBtn     = document.getElementById("pause-button");
+    const resetBtn     = document.getElementById("reset-button");
+    const configBtn    = document.getElementById("config-button");
     const timerDisplay = document.getElementById("timer-display");
 
     startBtn.disabled = true;
     resetBtn.disabled = true;
 
+    // ─────────── Button Handlers ───────────
     optionsBtn.onclick = openSettings;
 
     startBtn.addEventListener("click", () => {
       if (intervalId || totalSeconds <= 0) return;
-
       intervalId = setInterval(() => {
         totalSeconds--;
         updateTimerDisplay();
-
         if (totalSeconds <= 0) {
           clearInterval(intervalId);
           intervalId = null;
           pauseBtn.disabled = true;
           startBtn.disabled = false;
-
           // 🔴 Flashing red timer on timeout
           timerDisplay.textContent = "00:00";
           timerDisplay.classList.add("flashing-red");
         }
       }, 1000);
-
       startBtn.disabled = true;
       pauseBtn.disabled = false;
     });
@@ -187,47 +187,57 @@
     resetBtn.addEventListener("click", () => {
       clearInterval(intervalId);
       intervalId = null;
-      totalSeconds = 0;
-      lastSeenCount = 0;
-
-      timerDisplay.textContent = "00:00";
-      timerDisplay.style.color = "";
-      timerDisplay.style.fontWeight = "";
+      totalSeconds    = 0;
+      lastSeenCount   = 0;
+      timerDisplay.textContent       = "00:00";
+      timerDisplay.style.color       = "";
+      timerDisplay.style.fontWeight  = "";
       timerDisplay.classList.remove("flashing-red");
-
-      document.getElementById("left-dots").innerHTML = "";
+      document.getElementById("left-dots").innerHTML  = "";
       document.getElementById("right-dots").innerHTML = "";
-
       startBtn.disabled = true;
       pauseBtn.disabled = true;
       resetBtn.disabled = true;
     });
 
+    // ─────────── Config Button (opens /edit-config) ───────────
+    function openConfig() {
+      const width  = 600;
+      const height = 600;
+      // Position popup 25% from left, vertically centered
+      const left = window.screenX + (window.outerWidth - width) * 0.25;
+      const top  = window.screenY + (window.outerHeight - height) / 2;
+      window.open(
+        "/edit-config",
+        "_blank",
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes`
+      );
+    }
+    configBtn.addEventListener("click", openConfig);
+
+    // ─────────── Settings & QR Listeners ───────────
     function openSettings() {
       window.open("/settings", "_blank", "width=500,height=400,resizable=yes");
     }
-
     function openQrPopup() {
       window.open("/qr-popup", "_blank", "width=500,height=600,resizable=yes");
     }
 
+    // ─────────── Timer Helpers ───────────
     function formatTime(mins, secs) {
       const m = String(mins).padStart(2, '0');
       const s = String(secs).padStart(2, '0');
       return `${m}:${s}`;
     }
-
     function updateTimerDisplay() {
       const mins = Math.floor(totalSeconds / 60);
       const secs = totalSeconds % 60;
       timerDisplay.textContent = formatTime(mins, secs);
     }
-
     async function checkForNewScans() {
       try {
-        const res = await fetch("/ping");
+        const res   = await fetch("/ping");
         const count = parseInt(await res.text(), 10);
-
         if (count > lastSeenCount) {
           const redDot = document.querySelector("#left-dots .dot.red");
           if (redDot) {
@@ -237,14 +247,13 @@
             lastSeenCount = count;
           }
         }
-
         const remainingRedDots = document.querySelectorAll("#left-dots .dot.red").length;
         if (remainingRedDots === 0 && lastSeenCount > 0) {
           clearInterval(intervalId);
           intervalId = null;
           timerDisplay.textContent = "🏁";
-          timerDisplay.style.color = "green";
-          timerDisplay.style.fontWeight = "bold";
+          timerDisplay.style.color       = "green";
+          timerDisplay.style.fontWeight  = "bold";
           timerDisplay.classList.remove("flashing-red");
           startBtn.disabled = true;
           pauseBtn.disabled = true;
@@ -254,44 +263,72 @@
         console.error("Error pinging for scans:", err);
       }
     }
-
     setInterval(checkForNewScans, 2000);
 
     window.addEventListener("message", function (event) {
       console.log("🟢 Received message from settings:", event.data);
       if (event.data.type === "settings") {
         const { minutes, teams } = event.data;
-
         if (typeof minutes === "number" && !isNaN(minutes)) {
           totalSeconds = minutes * 60;
           updateTimerDisplay();
-          timerDisplay.style.color = "";
+          timerDisplay.style.color      = "";
           timerDisplay.style.fontWeight = "";
           timerDisplay.classList.remove("flashing-red");
           startBtn.disabled = false;
           resetBtn.disabled = false;
         }
-
         if (typeof teams === "number" && !isNaN(teams)) {
-          const leftDots = document.getElementById("left-dots");
+          const leftDots  = document.getElementById("left-dots");
           const rightDots = document.getElementById("right-dots");
-
-          leftDots.innerHTML = "";
+          leftDots.innerHTML  = "";
           rightDots.innerHTML = "";
           lastSeenCount = 0;
-
           fetch("/reset", { method: "POST" });
-
           for (let i = 0; i < teams; i++) {
             const dot = document.createElement("div");
             dot.classList.add("dot", "red");
             leftDots.appendChild(dot);
           }
         }
-
         console.log("✔️ Settings applied:", event.data);
       }
     });
+
+    // ─────────── Step 3: Load and apply /api/config on page load ───────────
+  async function loadAndApplyConfig() {
+    try {
+      const resp = await fetch("/api/config");
+      if (!resp.ok) throw new Error("Cannot fetch /api/config");
+      const cfg = await resp.json();
+
+      // 1) If there's a background_image set, use it:
+      if (cfg.ui && cfg.ui.background_image) {
+        document.body.style.backgroundImage =
+          `url("/static/${cfg.ui.background_image}")`;
+        document.body.style.backgroundSize   = "cover";
+        document.body.style.backgroundRepeat = "no-repeat";
+        document.body.style.backgroundPosition = "center";
+      }
+      // 2) Otherwise, if there's a background_color, use that:
+      else if (cfg.ui && cfg.ui.background_color) {
+        document.body.style.backgroundColor = cfg.ui.background_color;
+        document.body.style.backgroundImage = "none";
+      }
+
+      // 3) If there's a font_family, apply it:
+      if (cfg.ui && cfg.ui.font_family) {
+        document.body.style.fontFamily = cfg.ui.font_family;
+      }
+    } catch (e) {
+      console.warn("Could not load/apply config:", e);
+    }
+  }
+
+  // On DOMContentLoaded (i.e. when page first loads), run:
+  window.addEventListener("DOMContentLoaded", loadAndApplyConfig);
+
+  // You can also call loadAndApplyConfig() after each time you reload/reset the dots, etc.
   </script>
 </body>
 </html>

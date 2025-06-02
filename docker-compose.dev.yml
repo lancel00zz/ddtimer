@@ -1,0 +1,10 @@
+services:
+  facilitator:
+    image: facilitator-dev
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./app:/app/app
+      - ./config:/app/config
+    environment:
+      - HOST_IP=${HOST_IP}
