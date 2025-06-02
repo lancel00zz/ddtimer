@@ -122,29 +122,6 @@ def edit_config():
         background_color=current_color
     )
 
-
-@main.route("/qr-image")
-def qr_image():
-    """
-    Generates a QR code PNG for the “/done” endpoint and returns it as image/png.
-    """
-    ip = get_local_ip()
-    full_url = f"http://{ip}:5050/done"
-
-    img = qrcode.make(full_url)
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
-    return send_file(buffer, mimetype="image/png")
-
-
-def get_local_ip():
-    return os.environ.get("HOST_IP", "127.0.0.1")
-
-
-scan_count = 0
-
-
 @main.route("/done")
 def done():
     """
@@ -210,3 +187,24 @@ def api_config():
             return jsonify(content)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route("/qr-image")
+def qr_image():
+    """
+    Dynamically generate a PNG QR code that encodes the URL of our /done route.
+    When a phone scans this QR, it will open https://<host>/done and register a check-in.
+    """
+    # 1) Build the full URL to /done (include scheme + host + port)
+    #    request.url_root ends with a trailing slash, e.g. "http://localhost:5050/"
+    done_url = request.url_root.rstrip("/") + "/done"
+
+    # 2) Generate a QR image
+    img = qrcode.make(done_url)
+
+    # 3) Write it into an in-memory buffer
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+
+    # 4) Return it as a PNG response
+    return send_file(buf, mimetype="image/png")
