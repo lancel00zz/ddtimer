@@ -1,23 +1,23 @@
 # app/routes.py
+import io
+import os
+import json
+import qrcode
+
 from flask import (
     Blueprint,
     render_template,
     request,
     send_file,
-    jsonify,
-    redirect,
-    url_for,
-    Response
+    jsonify
 )
-import qrcode
-import io
-import os
-import json
 from werkzeug.utils import secure_filename
 
+# 1) Define a Blueprint called "main"
 main = Blueprint("main", __name__)
 
 
+# ───────────────────────────────────────────────────────────────────────
 @main.route("/")
 def home():
     """
@@ -61,12 +61,9 @@ def edit_config():
         # ── 2) Handle the color-picker value ──
         picked_color = request.form.get("background_color", "").strip()
         if picked_color:
-            # Store the chosen color in JSON
             parsed["ui"]["background_color"] = picked_color
-            # If user chose a color, clear any existing image preference
             parsed["ui"]["background_image"] = None
 
-        # Write the JSON back (now including any color changes)
         try:
             with open(config_path, "w") as f:
                 json.dump(parsed, f, indent=2)
@@ -85,10 +82,9 @@ def edit_config():
                     return f"<h1>Failed to save image</h1><p>{save_err}</p>", 500
 
                 # Update JSON so that ui.background_image = <filename>
-                # (and clear out background_color since an image now takes priority)
+                parsed["ui"]["background_image"] = filename
+                parsed["ui"]["background_color"] = None
                 try:
-                    parsed["ui"]["background_image"] = filename
-                    parsed["ui"]["background_color"] = None
                     with open(config_path, "w") as f:
                         json.dump(parsed, f, indent=2)
                 except Exception as cfg_err:
@@ -97,9 +93,7 @@ def edit_config():
         # ── 4) Reload parent timer and close this popup ──
         return """
         <script>
-          // 1) Reload the main timer page so it picks up new config
           window.opener.location.reload();
-          // 2) Close this popup window
           window.close();
         </script>
         """
@@ -110,9 +104,9 @@ def edit_config():
             content = json.load(f)
             pretty = json.dumps(content, indent=2)
     except Exception as e:
-        pretty = json.dumps({"error": str(e)}, indent=2)
+        content = {"error": str(e)}
+        pretty = json.dumps(content, indent=2)
 
-    # Extract the current background_color if present, otherwise default to "#d0f0ff"
     cfg_ui = content.get("ui", {}) if isinstance(content, dict) else {}
     current_color = cfg_ui.get("background_color") or "#d0f0ff"
 
@@ -121,6 +115,11 @@ def edit_config():
         config_content=pretty,
         background_color=current_color
     )
+
+
+# ───────────────────────────────────────────────────────────────────────
+# In-memory counter for /done and /ping
+scan_count = 0
 
 @main.route("/done")
 def done():
@@ -162,7 +161,7 @@ def qr_popup():
 @main.route("/view-config")
 def view_config():
     """
-    Returns the raw JSON (pretty‐printed) so a user can inspect it.
+    Returns the raw JSON (pretty-printed) so a user can inspect it.
     """
     try:
         cfg_path = os.path.join("config", "config.json")
@@ -177,8 +176,7 @@ def view_config():
 @main.route("/api/config")
 def api_config():
     """
-    Returns the exact /config/config.json as a JSON object 
-    (for “fetch()” on the frontend).
+    Returns the exact /config/config.json as a JSON object (for fetch() on the frontend).
     """
     try:
         cfg_path = os.path.join("config", "config.json")
@@ -187,24 +185,21 @@ def api_config():
             return jsonify(content)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-@app.route("/qr-image")
+
+
+# ───────────────────────────────────────────────────────────────────────
+@main.route("/qr-image")
 def qr_image():
     """
-    Dynamically generate a PNG QR code that encodes the URL of our /done route.
+    Dynamically generate a PNG QR code that encodes the URL of /done.
     When a phone scans this QR, it will open https://<host>/done and register a check-in.
     """
-    # 1) Build the full URL to /done (include scheme + host + port)
-    #    request.url_root ends with a trailing slash, e.g. "http://localhost:5050/"
+    # Build the full /done URL based on whatever host called us (ngrok or Railway)
     done_url = request.url_root.rstrip("/") + "/done"
 
-    # 2) Generate a QR image
     img = qrcode.make(done_url)
-
-    # 3) Write it into an in-memory buffer
-    buf = BytesIO()
+    buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
 
-    # 4) Return it as a PNG response
     return send_file(buf, mimetype="image/png")
