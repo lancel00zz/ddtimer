@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Timer Configuration</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 1em;
+      font-weight: bold;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      font-family: monospace;
+      margin-top: 5px;
+      resize: vertical;
+    }
+    input[type="file"], input[type="color"] {
+      margin-top: 5px;
+    }
+    .buttons {
+      margin-top: 20px;
+    }
+    button {
+      font-size: 1rem;
+      padding: 8px 16px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Edit Timer Configuration</h1>
+
+  <form id="config-form" action="/edit-config" method="POST" enctype="multipart/form-data">
+    <!-- ── Raw JSON textarea ── -->
+    <label for="config_json">Configuration (JSON):</label>
+    <textarea id="config_json" name="config_json">{{ config_content }}</textarea>
+
+    <!-- ── Color Picker ── -->
+    <label for="background_color">Choose Background Color:</label>
+    <input
+      type="color"
+      id="background_color"
+      name="background_color"
+      value="{{ background_color }}"
+    />
+
+    <!-- ── File Upload for Background Image ── -->
+    <label for="bg_file">Or Upload Background Image:</label>
+    <input type="file" id="bg_file" name="bg_file" accept="image/*" />
+
+    <!-- ── Save / Cancel ── -->
+    <div class="buttons">
+      <button type="submit">Save</button>
+      <button type="button" onclick="window.close()">Cancel</button>
+    </div>
+  </form>
+</body>
+</html>

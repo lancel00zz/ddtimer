@@ -12,12 +12,14 @@
 ## ------------------- end ----------------
 services:
   facilitator:
-    image: lancel00zz/facilitator-timer-app:latest
+    image: lancel00zz/facilitator-timer-app:v3.0
     ports:
-      - "5050:5050"
+      - "5050:5000"
     volumes:
     ## it loads my dev environment folders inside the container - so it is a direct and live link to them
       - ./app:/app/app
       - ./config:/app/config
     environment:
       - HOST_IP=${HOST_IP}
+      - FLASK_ENV=development
+    command: flask run --host=0.0.0.0 --port=5000 --reload
