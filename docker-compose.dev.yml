@@ -14,7 +14,7 @@ services:
   facilitator:
     image: lancel00zz/facilitator-timer-app:v3.0
     ports:
-      - "5050:5000"
+      - "5056:5000"
     volumes:
     ## it loads my dev environment folders inside the container - so it is a direct and live link to them
       - ./app:/app/app
