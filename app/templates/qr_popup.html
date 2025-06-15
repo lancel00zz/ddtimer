@@ -26,7 +26,7 @@
     <img src="/qr-image" alt="QR Code" />
     <div style="margin-top: 20px; text-align: center; font-family: sans-serif; color: rgb(6, 6, 6); font-size: 1.5rem;">
       <div>or visit</div>
-      <div>https://localhost:5056/done</div>
+      <div id="url-line">...</div>
     </div>
   </div>
   <script>
@@ -36,6 +36,7 @@
         window.moveTo(left, top);
       }
     });
+    document.getElementById("url-line").textContent = `${window.location.origin}/done`;
   </script>
 </body>
 </html>
