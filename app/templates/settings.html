@@ -71,6 +71,14 @@
 
       window.close();
     }
+
+    // Listen for window position message
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "position-settings-window") {
+        const { left, top } = event.data;
+        window.moveTo(left, top);
+      }
+    });
   </script>
 </body>
 </html>

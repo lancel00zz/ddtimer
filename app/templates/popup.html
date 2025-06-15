@@ -67,7 +67,7 @@
     }
 
     .timer-display {
-      font-size: 30vw;
+      font-size: clamp(2rem, 30vw, 30rem);
       margin: 0;
       line-height: 1;
     }
@@ -114,6 +114,52 @@
       color: red;
       animation: flash 1s infinite;
     }
+
+    /* Responsive layout for 3 stages */
+    @media (max-width: 650px) {
+      #config-button {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .container > .dot-column,
+      .buttons,
+      .qr-section {
+        display: none !important;
+      }
+
+      .center {
+        padding-top: 20px;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .timer-display {
+        font-size: clamp(3rem, 30vw, 12rem);
+      }
+    }
+
+    @media (max-width: 600px) and (min-height: 300px) {
+      .container > .dot-column {
+        display: flex !important;
+      }
+
+      .buttons,
+      .qr-section {
+        display: none !important;
+      }
+
+      .center {
+        padding-top: 20px;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .timer-display {
+        font-size: clamp(3rem, 30vw, 12rem);
+      }
+    }
   </style>
 </head>
 <body>
@@ -123,17 +169,16 @@
     <div class="center">
       <h1 id="timer-display" class="timer-display">00:00</h1>
       <div class="buttons">
-        <button id="start-button">Start</button>
-        <button id="pause-button" disabled>Pause</button>
-        <button id="options-button" title="Open Settings">⏰</button>
+        <button id="toggle-button" disabled>Start</button>
+        <button id="options-button" title="Open Settings">Set</button>
         <button id="reset-button" title="Reset App">Reset</button>
         <span style="margin-left: 20px;"></span> <!-- ← extra spacing -->
-        <button id="config-button" title="View Config">Config</button>
+        <button id="config-button" title="View Config">🛠️</button>
       </div>
 
       <div class="qr-section">
         <img src="/qr-image" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
-        <div class="qr-label">(c) Patrick Zakher - 2025 - TimerFacilitator v2.0</div>
+        <div class="qr-label">(c) Patrick Zakher - 2025 - TimerFacilitator v3.1</div>
       </div>
     </div>
 
@@ -146,42 +191,39 @@
     let lastSeenCount = 0;
 
     const optionsBtn   = document.getElementById("options-button");
-    const startBtn     = document.getElementById("start-button");
-    const pauseBtn     = document.getElementById("pause-button");
+    const toggleBtn    = document.getElementById("toggle-button");
     const resetBtn     = document.getElementById("reset-button");
     const configBtn    = document.getElementById("config-button");
     const timerDisplay = document.getElementById("timer-display");
 
-    startBtn.disabled = true;
+    toggleBtn.disabled = true;
     resetBtn.disabled = true;
 
     // ─────────── Button Handlers ───────────
     optionsBtn.onclick = openSettings;
 
-    startBtn.addEventListener("click", () => {
-      if (intervalId || totalSeconds <= 0) return;
-      intervalId = setInterval(() => {
-        totalSeconds--;
-        updateTimerDisplay();
-        if (totalSeconds <= 0) {
-          clearInterval(intervalId);
-          intervalId = null;
-          pauseBtn.disabled = true;
-          startBtn.disabled = false;
-          // 🔴 Flashing red timer on timeout
-          timerDisplay.textContent = "00:00";
-          timerDisplay.classList.add("flashing-red");
-        }
-      }, 1000);
-      startBtn.disabled = true;
-      pauseBtn.disabled = false;
-    });
-
-    pauseBtn.addEventListener("click", () => {
-      clearInterval(intervalId);
-      intervalId = null;
-      startBtn.disabled = false;
-      pauseBtn.disabled = true;
+    toggleBtn.addEventListener("click", () => {
+      if (!intervalId && totalSeconds > 0) {
+        // Start timer
+        intervalId = setInterval(() => {
+          totalSeconds--;
+          updateTimerDisplay();
+          if (totalSeconds <= 0) {
+            clearInterval(intervalId);
+            intervalId = null;
+            toggleBtn.textContent = "Start";
+            toggleBtn.disabled = true;
+            timerDisplay.textContent = "00:00";
+            timerDisplay.classList.add("flashing-red");
+          }
+        }, 1000);
+        toggleBtn.textContent = "Stop";
+      } else {
+        // Pause timer
+        clearInterval(intervalId);
+        intervalId = null;
+        toggleBtn.textContent = "Start";
+      }
     });
 
     resetBtn.addEventListener("click", () => {
@@ -195,8 +237,8 @@
       timerDisplay.classList.remove("flashing-red");
       document.getElementById("left-dots").innerHTML  = "";
       document.getElementById("right-dots").innerHTML = "";
-      startBtn.disabled = true;
-      pauseBtn.disabled = true;
+      toggleBtn.textContent = "Start";
+      toggleBtn.disabled = true;
       resetBtn.disabled = true;
     });
 
@@ -217,10 +259,49 @@
 
     // ─────────── Settings & QR Listeners ───────────
     function openSettings() {
-      window.open("/settings", "_blank", "width=500,height=400,resizable=yes");
+      const btnRect = optionsBtn.getBoundingClientRect();
+      const width = 500;
+      const height = 400;
+
+      const left = window.screenX + btnRect.left;
+      const top = window.screenY + btnRect.bottom + 10;
+
+      const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
+
+      // Once the window is ready, send it a message to position itself
+      settingsWindow.addEventListener("load", () => {
+        settingsWindow.postMessage(
+          {
+            type: "position-settings-window",
+            left,
+            top
+          },
+          "*"
+        );
+      });
     }
     function openQrPopup() {
-      window.open("/qr-popup", "_blank", "width=500,height=600,resizable=yes");
+      const qrImg = document.querySelector(".qr-section img");
+      const rect = qrImg.getBoundingClientRect();
+      const width = 500;
+      const height = 600;
+
+      const left = window.screenX + rect.left;
+      const top = window.screenY + rect.bottom + 10;
+
+      const qrWindow = window.open("/qr-popup", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
+
+      // Once the window is ready, send it a message to position itself
+      qrWindow.addEventListener("load", () => {
+        qrWindow.postMessage(
+          {
+            type: "position-qr-window",
+            left,
+            top
+          },
+          "*"
+        );
+      });
     }
 
     // ─────────── Timer Helpers ───────────
@@ -255,8 +336,7 @@
           timerDisplay.style.color       = "green";
           timerDisplay.style.fontWeight  = "bold";
           timerDisplay.classList.remove("flashing-red");
-          startBtn.disabled = true;
-          pauseBtn.disabled = true;
+          toggleBtn.disabled = true;
           resetBtn.disabled = false;
         }
       } catch (err) {
@@ -275,7 +355,7 @@
           timerDisplay.style.color      = "";
           timerDisplay.style.fontWeight = "";
           timerDisplay.classList.remove("flashing-red");
-          startBtn.disabled = false;
+          toggleBtn.disabled = false;
           resetBtn.disabled = false;
         }
         if (typeof teams === "number" && !isNaN(teams)) {
@@ -319,6 +399,11 @@
       // 3) If there's a font_family, apply it:
       if (cfg.ui && cfg.ui.font_family) {
         document.body.style.fontFamily = cfg.ui.font_family;
+      }
+
+      // 4) If there's a font_color, apply it:
+      if (cfg.ui && cfg.ui.font_color) {
+        timerDisplay.style.color = cfg.ui.font_color;
       }
     } catch (e) {
       console.warn("Could not load/apply config:", e);

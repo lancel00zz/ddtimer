@@ -1,7 +1,8 @@
 {
   "ui": {
-    "background_image": "cannes_new.png",
+    "background_image": "timer04.png",
     "background_color": null,
-    "font_family": "Courier New"
+    "font_family": "Courier New",
+    "font_color": "#000000"
   }
 }
