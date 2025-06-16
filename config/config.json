@@ -1,7 +1,9 @@
 {
   "ui": {
-    "background_image": "cannes_new.png",
-    "background_color": null,
-    "font_family": "Courier New"
+    "background_image": null,
+    "background_color": "#6dbbdf",
+    "font_family": "Verdana",
+    "font_color": "#000000",
+    "dot_size": "S"
   }
 }
