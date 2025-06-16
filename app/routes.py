@@ -128,7 +128,25 @@ def done():
     """
     global scan_count
     scan_count += 1
-    return "✅ Submission received! You may return to your team."
+    return """
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body {
+        font-family: sans-serif;
+        font-size: 2.5rem;
+        text-align: center;
+        padding: 2em;
+      }
+    </style>
+  </head>
+  <body>
+    ✅ Submission received!<br><br>
+    You may return to your team.
+  </body>
+</html>
+"""
 
 
 @main.route("/ping")
