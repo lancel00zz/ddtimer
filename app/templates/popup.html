@@ -189,6 +189,7 @@
     let totalSeconds = 0;
     let intervalId    = null;
     let lastSeenCount = 0;
+    let config = null;
 
     const optionsBtn   = document.getElementById("options-button");
     const toggleBtn    = document.getElementById("toggle-button");
@@ -235,6 +236,10 @@
       timerDisplay.style.color       = "";
       timerDisplay.style.fontWeight  = "";
       timerDisplay.classList.remove("flashing-red");
+      // Reapply configured font color if present
+      if (config && config.ui && config.ui.font_color) {
+        timerDisplay.style.color = config.ui.font_color;
+      }
       document.getElementById("left-dots").innerHTML  = "";
       document.getElementById("right-dots").innerHTML = "";
       toggleBtn.textContent = "Start";
@@ -355,6 +360,9 @@
           timerDisplay.style.color      = "";
           timerDisplay.style.fontWeight = "";
           timerDisplay.classList.remove("flashing-red");
+          if (config && config.ui && config.ui.font_color) {
+            timerDisplay.style.color = config.ui.font_color;
+          }
           toggleBtn.disabled = false;
           resetBtn.disabled = false;
         }
@@ -380,30 +388,30 @@
     try {
       const resp = await fetch("/api/config");
       if (!resp.ok) throw new Error("Cannot fetch /api/config");
-      const cfg = await resp.json();
+      config = await resp.json();
 
       // 1) If there's a background_image set, use it:
-      if (cfg.ui && cfg.ui.background_image) {
+      if (config.ui && config.ui.background_image) {
         document.body.style.backgroundImage =
-          `url("/static/${cfg.ui.background_image}")`;
+          `url("/static/${config.ui.background_image}")`;
         document.body.style.backgroundSize   = "cover";
         document.body.style.backgroundRepeat = "no-repeat";
         document.body.style.backgroundPosition = "center";
       }
       // 2) Otherwise, if there's a background_color, use that:
-      else if (cfg.ui && cfg.ui.background_color) {
-        document.body.style.backgroundColor = cfg.ui.background_color;
+      else if (config.ui && config.ui.background_color) {
+        document.body.style.backgroundColor = config.ui.background_color;
         document.body.style.backgroundImage = "none";
       }
 
       // 3) If there's a font_family, apply it:
-      if (cfg.ui && cfg.ui.font_family) {
-        document.body.style.fontFamily = cfg.ui.font_family;
+      if (config.ui && config.ui.font_family) {
+        document.body.style.fontFamily = config.ui.font_family;
       }
 
       // 4) If there's a font_color, apply it:
-      if (cfg.ui && cfg.ui.font_color) {
-        timerDisplay.style.color = cfg.ui.font_color;
+      if (config.ui && config.ui.font_color) {
+        timerDisplay.style.color = config.ui.font_color;
       }
     } catch (e) {
       console.warn("Could not load/apply config:", e);

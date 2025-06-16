@@ -1,8 +1,8 @@
 {
   "ui": {
-    "background_image": "timer04.png",
-    "background_color": null,
-    "font_family": "Courier New",
-    "font_color": "#000000"
+    "background_image": null,
+    "background_color": "#6dbbdf",
+    "font_family": "Verdana",
+    "font_color": "#ee6868"
   }
 }
