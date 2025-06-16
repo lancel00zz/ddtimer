@@ -95,6 +95,14 @@
       </select>
     </div>
 
+    <div class="form-row">
+      <label>Dot Size:</label>
+      <label><input type="radio" name="dot_size" value="S" /> S</label>
+      <label><input type="radio" name="dot_size" value="M" /> M</label>
+      <label><input type="radio" name="dot_size" value="L" /> L</label>
+      <label><input type="radio" name="dot_size" value="XL" /> XL</label>
+    </div>
+
     <a href="#" id="toggle-raw-config" style="display: inline-block; margin-top: 1em;">Show raw config ▼</a>
     <div id="raw-config-wrapper" style="display: none;">
       <label for="config_json">Configuration (JSON):</label>
@@ -130,6 +138,7 @@
         const config = JSON.parse(configTextarea.value);
         config.ui = config.ui || {};
         config.ui.background_color = bgColorInput.value;
+        delete config.ui.background_image;
         configTextarea.value = JSON.stringify(config, null, 2);
       } catch (e) {
         console.error("Invalid JSON while updating background color", e);
@@ -147,23 +156,42 @@
         console.error("Invalid JSON while updating font family", e);
       }
     });
+
+    document.getElementById("bg_file").addEventListener("change", (e) => {
+      const fileInput = e.target;
+      const label = document.getElementById("bg_file_label");
+      const file = fileInput.files[0];
+      if (file) {
+        label.textContent = file.name;
+
+        // Clear background color if file is chosen
+        try {
+          const config = JSON.parse(configTextarea.value);
+          config.ui = config.ui || {};
+          config.ui.background_image = file.name;
+          delete config.ui.background_color;
+          configTextarea.value = JSON.stringify(config, null, 2);
+        } catch (e) {
+          console.error("Error updating background image in JSON", e);
+        }
+      } else {
+        label.textContent = "";
+      }
+    });
   </script>
 <script>
-  document.getElementById("config-form").addEventListener("submit", () => {
-    const fontColorInput = document.getElementById("font_color");
-    const bgColorInput = document.getElementById("background_color");
-    const fontSelect = document.getElementById("font_family");
-    const configTextarea = document.getElementById("config_json");
-
+  document.getElementById("config-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
     try {
-      const config = JSON.parse(configTextarea.value);
-      config.ui = config.ui || {};
-      config.ui.font_color = fontColorInput.value;
-      config.ui.background_color = bgColorInput.value;
-      config.ui.font_family = fontSelect.value;
-      configTextarea.value = JSON.stringify(config, null, 2);
-    } catch (e) {
-      console.error("Invalid JSON on submit while merging font_color", e);
+      await fetch(form.action, {
+        method: form.method,
+        body: formData,
+      });
+      window.close();
+    } catch (err) {
+      console.error("Failed to save config:", err);
     }
   });
 </script>
@@ -190,6 +218,16 @@
     } catch (e) {
       console.warn("Unable to extract font_color from JSON config:", e);
     }
+    const configTextarea = document.getElementById("config_json");
+    try {
+      const config = JSON.parse(configTextarea.value);
+      // Always select a dot size, default to "S" if not set
+      const dotSize = config.ui?.dot_size || "S";
+      const dotInput = document.querySelector(`input[name="dot_size"][value="${dotSize}"]`);
+      if (dotInput) dotInput.checked = true;
+    } catch (e) {
+      // Ignore errors here
+    }
   });
 </script>
 <script>
@@ -209,7 +247,8 @@
         background_image: null,
         background_color: "#6dbbdf",
         font_family: "Verdana",
-        font_color: "#000000"
+        font_color: "#000000",
+        dot_size: "S"
       }
     };
 
@@ -221,6 +260,24 @@
     document.getElementById("font_color").value = defaultConfig.ui.font_color;
     document.getElementById("font_family").value = defaultConfig.ui.font_family;
     document.getElementById("bg_file_label").textContent = "";
+    const dotInputs = document.querySelectorAll('input[name="dot_size"]');
+    dotInputs.forEach(input => {
+      input.checked = input.value === defaultConfig.ui.dot_size;
+    });
+  });
+</script>
+<script>
+  document.querySelectorAll('input[name="dot_size"]').forEach((el) => {
+    el.addEventListener("change", () => {
+      try {
+        const config = JSON.parse(configTextarea.value);
+        config.ui = config.ui || {};
+        config.ui.dot_size = el.value;
+        configTextarea.value = JSON.stringify(config, null, 2);
+      } catch (e) {
+        console.error("Invalid JSON while updating dot size", e);
+      }
+    });
   });
 </script>
 </body>

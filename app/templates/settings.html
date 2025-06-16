@@ -10,24 +10,53 @@
       padding: 30px;
       display: flex;
       flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+      width: 300px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .input-row {
+      display: flex;
       align-items: center;
-      gap: 15px;
+      gap: 8px;
+      margin-bottom: 15px;
+      width: 100%;
     }
 
-    h3 {
-      margin-bottom: 0;
-    }
-
-    input {
+    input[type="number"] {
       font-size: 1.2rem;
       width: 60px;
       text-align: center;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
 
-    .button-row {
+    .teams-row {
       display: flex;
       gap: 20px;
-      margin-top: 20px;
+      margin-bottom: 15px;
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .team-input {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      flex: 1;
+    }
+
+    .team-input span {
+      font-weight: bold;
+      margin-bottom: 4px;
+      display: block;
     }
 
     button {
@@ -37,19 +66,43 @@
       border-radius: 6px;
       background-color: #ddd;
       cursor: pointer;
+      margin-right: 10px;
     }
 
     button:hover {
       background-color: #ccc;
     }
+
+    .button-row {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      justify-content: flex-end;
+    }
   </style>
 </head>
 <body>
-  <h3>Set the time</h3>
-  <input type="number" id="time-input" min="1"> min
+  <div>
+    <label for="time-input">Set the time</label>
+    <div class="input-row">
+      <input type="number" id="time-input" min="1" />
+      <span>min</span>
+    </div>
+  </div>
 
-  <h3>Number of participating teams</h3>
-  <input type="number" id="team-input" min="1">
+  <div>
+    <label>Set the teams</label>
+    <div class="teams-row">
+      <div class="team-input">
+        <span>Red</span>
+        <input type="number" id="red-teams" min="0" />
+      </div>
+      <div class="team-input">
+        <span>Green</span>
+        <input type="number" id="green-teams" min="0" />
+      </div>
+    </div>
+  </div>
 
   <div class="button-row">
     <button onclick="window.close()">Cancel</button>
@@ -59,13 +112,15 @@
   <script>
     function applySettings() {
       const minutes = parseInt(document.getElementById("time-input").value, 10);
-      const teams = parseInt(document.getElementById("team-input").value, 10);
+      const red = parseInt(document.getElementById("red-teams").value, 10);
+      const green = parseInt(document.getElementById("green-teams").value, 10);
 
       if (window.opener) {
         window.opener.postMessage({
           type: "settings",
           minutes,
-          teams
+          teams: red,
+          green_teams: green
         }, "*");
       }
 
@@ -77,6 +132,26 @@
       if (event.data?.type === "position-settings-window") {
         const { left, top } = event.data;
         window.moveTo(left, top);
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (!window.opener) return;
+      try {
+        const timerText = window.opener.document.getElementById("timer-display")?.textContent;
+        const leftDots = window.opener.document.querySelectorAll("#left-dots .dot.red").length;
+        const rightDots = window.opener.document.querySelectorAll("#right-dots .dot.green").length;
+
+        if (timerText) {
+          const [minStr] = timerText.split(":");
+          const minutes = parseInt(minStr, 10);
+          if (!isNaN(minutes)) document.getElementById("time-input").value = minutes;
+        }
+
+        document.getElementById("red-teams").value = leftDots;
+        document.getElementById("green-teams").value = rightDots;
+      } catch (err) {
+        console.warn("Failed to populate settings from opener:", err);
       }
     });
   </script>

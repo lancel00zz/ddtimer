@@ -3,6 +3,7 @@
     "background_image": null,
     "background_color": "#6dbbdf",
     "font_family": "Verdana",
-    "font_color": "#ee6868"
+    "font_color": "#000000",
+    "dot_size": "S"
   }
 }
