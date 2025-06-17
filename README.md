@@ -29,6 +29,10 @@ A lightweight, fullscreen-ready web app for trainers and facilitators to manage 
 - 🧪 Set timer to `-1` to trigger flashing red timeout immediately (for testing)
 
 ---
+## What's New in Version 3.2.1
+
+- 📗 info link at the bottom of the app that takes to Github public repo readme.md
+
 
 ## What's New in Version 3.2
 
