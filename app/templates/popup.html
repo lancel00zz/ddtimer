@@ -193,6 +193,8 @@
   </div>
 
   <script>
+    let lastKnownBackgroundImage = null;
+
     let totalSeconds = 0;
     let intervalId    = null;
     let lastSeenCount = 0;
@@ -441,16 +443,24 @@
       if (!resp.ok) throw new Error("Cannot fetch /api/config");
       config = await resp.json();
 
-      // 1) If there's a background_image set, use it:
-      if (config.ui && config.ui.background_image) {
-        document.body.style.backgroundImage =
-          `url("/static/${config.ui.background_image}")`;
-        document.body.style.backgroundSize   = "cover";
+      // 1) If there's a background_image set (not null/empty), use it:
+      if (config.ui && config.ui.background_image !== null && config.ui.background_image !== "") {
+        lastKnownBackgroundImage = config.ui.background_image;
+        document.body.style.backgroundImage = `url("/static/${config.ui.background_image}")`;
+        document.body.style.backgroundSize = "cover";
         document.body.style.backgroundRepeat = "no-repeat";
         document.body.style.backgroundPosition = "center";
-      } else if (config.ui?.background_color) {
+        document.body.style.backgroundColor = "";
+      } else if (config.ui?.background_image === null && config.ui?.background_color) {
+        lastKnownBackgroundImage = null;
         document.body.style.backgroundImage = "none";
         document.body.style.backgroundColor = config.ui.background_color;
+      } else if (lastKnownBackgroundImage) {
+        document.body.style.backgroundImage = `url("/static/${lastKnownBackgroundImage}")`;
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundRepeat = "no-repeat";
+        document.body.style.backgroundPosition = "center";
+        document.body.style.backgroundColor = "";
       }
 
       // 3) If there's a font_family, apply it:

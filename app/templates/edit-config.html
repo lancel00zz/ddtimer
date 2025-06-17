@@ -117,6 +117,8 @@
     </div>
   </form>
   <script>
+    let lastKnownBackgroundImage = null;
+
     const fontColorInput = document.getElementById("font_color");
     const configTextarea = document.getElementById("config_json");
 
@@ -140,6 +142,9 @@
         config.ui.background_color = bgColorInput.value;
         delete config.ui.background_image;
         configTextarea.value = JSON.stringify(config, null, 2);
+        lastKnownBackgroundImage = null;
+        document.getElementById("bg_file_label").textContent = "";
+        document.getElementById("bg_file").value = "";
       } catch (e) {
         console.error("Invalid JSON while updating background color", e);
       }
@@ -163,6 +168,7 @@
       const file = fileInput.files[0];
       if (file) {
         label.textContent = file.name;
+        lastKnownBackgroundImage = file.name;
 
         // Clear background color if file is chosen
         try {
@@ -176,6 +182,7 @@
         }
       } else {
         label.textContent = "";
+        lastKnownBackgroundImage = null;
       }
     });
   </script>
@@ -214,6 +221,7 @@
       const bgFileLabel = document.getElementById("bg_file_label");
       if (config.ui && config.ui.background_image) {
         bgFileLabel.textContent = config.ui.background_image;
+        lastKnownBackgroundImage = config.ui.background_image;
       }
     } catch (e) {
       console.warn("Unable to extract font_color from JSON config:", e);
@@ -260,6 +268,8 @@
     document.getElementById("font_color").value = defaultConfig.ui.font_color;
     document.getElementById("font_family").value = defaultConfig.ui.font_family;
     document.getElementById("bg_file_label").textContent = "";
+    document.getElementById("bg_file").value = "";
+    lastKnownBackgroundImage = null;
     const dotInputs = document.querySelectorAll('input[name="dot_size"]');
     dotInputs.forEach(input => {
       input.checked = input.value === defaultConfig.ui.dot_size;
@@ -273,6 +283,13 @@
         const config = JSON.parse(configTextarea.value);
         config.ui = config.ui || {};
         config.ui.dot_size = el.value;
+
+        // Preserve existing background image reference
+        if (!config.ui.background_image && lastKnownBackgroundImage) {
+          config.ui.background_image = lastKnownBackgroundImage;
+          delete config.ui.background_color;
+        }
+
         configTextarea.value = JSON.stringify(config, null, 2);
       } catch (e) {
         console.error("Invalid JSON while updating dot size", e);
