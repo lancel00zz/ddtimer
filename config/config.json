@@ -1,9 +1,9 @@
 {
   "ui": {
-    "background_color": "#b36ab4",
     "font_family": "Oswald",
     "font_color": "#000000",
-    "dot_size": "S",
-    "background_image": null
+    "dot_size": "M",
+    "background_image": null,
+    "background_color": "#d0f0ff"
   }
 }
