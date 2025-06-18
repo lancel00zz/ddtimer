@@ -1,7 +1,8 @@
 
 services:
   facilitator:
-    image: lancel00zz/facilitator-timer-app:${TAG:-latest}
+    platform: linux/amd64
+    image: lancel00zz/facilitator-timer-app:4.0
     environment:
       - HOST_IP=${HOST_IP}
     ports:
