@@ -118,16 +118,20 @@ def edit_config():
 
 
 # ───────────────────────────────────────────────────────────────────────
-# In-memory counter for /done and /ping
-scan_count = 0
+from collections import defaultdict
+from datetime import datetime
+
+# In-memory session-scoped tracking for /done, /ping, /reset
+sessions = defaultdict(lambda: {"count": 0, "last_ping": datetime.now()})
 
 @main.route("/done")
 def done():
     """
-    Called by the QR scanner. Increments scan_count and returns a confirmation string.
+    Called by the QR scanner. Increments scan count for the session and returns a confirmation string.
     """
-    global scan_count
-    scan_count += 1
+    session_id = request.args.get("session", "default")
+    sessions[session_id]["count"] += 1
+    sessions[session_id]["last_ping"] = datetime.now()
     return """
 <html>
   <head>
@@ -152,19 +156,20 @@ def done():
 @main.route("/ping")
 def ping():
     """
-    Called periodically by the frontend (every 2 seconds). Returns the current scan_count.
+    Called periodically by the frontend (every 2 seconds). Returns the current session scan count.
     """
-    global scan_count
-    return str(scan_count)
+    session_id = request.args.get("session", "default")
+    return str(sessions[session_id]["count"])
 
 
 @main.route("/reset", methods=["POST"])
 def reset():
     """
-    Resets the scan_count back to zero. Called when the facilitator resets the dots.
+    Resets the scan count for the session back to zero. Called when the facilitator resets the dots.
     """
-    global scan_count
-    scan_count = 0
+    session_id = request.args.get("session", "default")
+    sessions[session_id]["count"] = 0
+    sessions[session_id]["last_ping"] = datetime.now()
     return "OK"
 
 
@@ -213,7 +218,10 @@ def qr_image():
     When a phone scans this QR, it will open https://<host>/done and register a check-in.
     """
     # Build the full /done URL based on whatever host called us (ngrok or Railway)
+    session_id = request.args.get("session")
     done_url = request.url_root.rstrip("/") + "/done"
+    if session_id:
+        done_url += f"?session={session_id}"
 
     img = qrcode.make(done_url)
     buf = io.BytesIO()

@@ -180,7 +180,12 @@
 
       <div class="qr-section">
         <img src="/qr-image" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
-        <div class="qr-label">(c) Patrick Zakher - 2025 - TimerFacilitator v3.2</div>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.0</div>
+        <div id="session-indicator"
+             onclick="openSettings()"
+             style="font-size: 0.85rem; color: #333; text-decoration: underline; cursor: pointer;">
+          No session ID currently defined
+        </div>
       </div>
     </div>
 
@@ -281,13 +286,18 @@
 
       const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
 
-      // Once the window is ready, send it a message to position itself
+      // Get the current session_id from the indicator, if present
+      const sessionValue = document.getElementById("session-indicator").textContent;
+      const currentSession = sessionValue.startsWith("Session ID: ") ? sessionValue.replace("Session ID: ", "") : "";
+
+      // Once the window is ready, send it a message to position itself and prefill session_id
       settingsWindow.addEventListener("load", () => {
         settingsWindow.postMessage(
           {
             type: "position-settings-window",
             left,
-            top
+            top,
+            prefill_session_id: currentSession
           },
           "*"
         );
@@ -304,13 +314,16 @@
 
       const qrWindow = window.open("/qr-popup", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
 
-      // Once the window is ready, send it a message to position itself
+      // Once the window is ready, send it a message to position itself and pass session_id
       qrWindow.addEventListener("load", () => {
+        const sessionValue = document.getElementById("session-indicator").textContent;
+        const currentSession = sessionValue.startsWith("Session ID: ") ? sessionValue.replace("Session ID: ", "") : "";
         qrWindow.postMessage(
           {
             type: "position-qr-window",
             left,
-            top
+            top,
+            session_id: currentSession || null
           },
           "*"
         );
@@ -330,7 +343,9 @@
     }
     async function checkForNewScans() {
       try {
-        const res   = await fetch("/ping");
+        const sessionValue = document.getElementById("session-indicator").textContent;
+        const currentSession = sessionValue.startsWith("Session ID: ") ? sessionValue.replace("Session ID: ", "") : "";
+        const res = await fetch(`/ping?session=${encodeURIComponent(currentSession)}`);
         const count = parseInt(await res.text(), 10);
         if (count > lastSeenCount) {
           const redDot = document.querySelector("#left-dots .dot.red");
@@ -423,6 +438,16 @@
             }
           }
         }
+        // --- Session indicator update ---
+        const sessionIndicator = document.getElementById("session-indicator");
+        if (sessionIndicator) {
+          if (event.data.session_id) {
+            sessionIndicator.textContent = `Session ID: ${event.data.session_id}`;
+          } else {
+            sessionIndicator.textContent = "No session ID currently defined";
+          }
+        }
+        // ---
         console.log("✔️ Settings applied:", event.data);
       }
     });
