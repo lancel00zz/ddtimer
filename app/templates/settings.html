@@ -5,18 +5,18 @@
   <title>Timer Settings</title>
   <style>
     body {
-      font-family: 'Courier New', monospace;
-      background-color: #f8f8f8;
+      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+      background-color: #f0f2f5;
       padding: 30px;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 20px;
-      width: 300px;
+      gap: 12px;
+      width: 340px;
     }
 
     label {
-      font-weight: bold;
+      font-weight: 500;
       margin-bottom: 6px;
       display: block;
     }
@@ -25,7 +25,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 15px;
+      margin-bottom: 4px; /* tighter spacing below input rows */
       width: 100%;
     }
 
@@ -54,7 +54,7 @@
     }
 
     .team-input span {
-      font-weight: bold;
+      font-weight: 500;
       margin-bottom: 4px;
       display: block;
     }
@@ -79,29 +79,39 @@
       width: 100%;
       justify-content: flex-end;
     }
+
+    .session-help {
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 0;       /* no gap above */
+      margin-bottom: 8px;  /* slightly smaller gap below */
+    }
   </style>
 </head>
 <body>
-  <div>
-    <label for="time-input">Set the time</label>
-    <div class="input-row">
-      <input type="number" id="time-input" min="1" />
-      <span>min</span>
-    </div>
+  <div class="input-row">
+    <label for="time-input" style="width: 100px;">countdown:</label>
+    <input type="number" id="time-input" min="1" style="width: 60px;" />
+    <span>min</span>
   </div>
 
-  <div>
-    <label>Set the teams</label>
-    <div class="teams-row">
-      <div class="team-input">
-        <span>Red</span>
-        <input type="number" id="red-teams" min="0" />
-      </div>
-      <div class="team-input">
-        <span>Green</span>
-        <input type="number" id="green-teams" min="0" />
-      </div>
-    </div>
+  <div class="input-row">
+    <label for="red-teams" style="width: 100px;">red dots:</label>
+    <input type="number" id="red-teams" min="0" style="width: 60px;" />
+  </div>
+
+  <div class="input-row">
+    <label for="green-teams" style="width: 100px;">green dots:</label>
+    <input type="number" id="green-teams" min="0" style="width: 60px;" />
+  </div>
+
+  <div class="input-row">
+    <label for="session-id" style="width: 100px;">session ID:</label>
+    <input type="text" id="session-id" placeholder="e.g. PatrickLab1" style="flex: 1;" />
+    <button onclick="clearSessionId()">Clear</button>
+  </div>
+  <div class="session-help">
+    Keep or replace the session ID with something more memorable like patrick123, TeamGreen, Lab_jmx, ... It will become your session key for all backend calls, QR codes, dot counts, configu lookups, etc.
   </div>
 
   <div class="button-row">
@@ -114,24 +124,45 @@
       const minutes = parseInt(document.getElementById("time-input").value, 10);
       const red = parseInt(document.getElementById("red-teams").value, 10);
       const green = parseInt(document.getElementById("green-teams").value, 10);
+      const sessionId = document.getElementById("session-id").value.trim();
 
       if (window.opener) {
         window.opener.postMessage({
           type: "settings",
           minutes,
           teams: red,
-          green_teams: green
+          green_teams: green,
+          session_id: sessionId || null
         }, "*");
+      }
+
+      // Store edit-config-url with session if present
+      if (sessionId) {
+        const url = new URL("/edit-config", window.location.origin);
+        url.searchParams.set("session", sessionId);
+        localStorage.setItem("edit-config-url", url.toString());
+      } else {
+        localStorage.removeItem("edit-config-url");
       }
 
       window.close();
     }
 
-    // Listen for window position message
+    function clearSessionId() {
+      document.getElementById("session-id").value = "default";
+    }
+
+    // Listen for window position message and prefill session ID if provided
     window.addEventListener("message", (event) => {
       if (event.data?.type === "position-settings-window") {
         const { left, top } = event.data;
         window.moveTo(left, top);
+        if (event.data.prefill_session_id !== undefined) {
+          const sessionField = document.getElementById("session-id");
+          if (sessionField) {
+            sessionField.value = event.data.prefill_session_id;
+          }
+        }
       }
     });
 

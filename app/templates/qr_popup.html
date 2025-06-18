@@ -30,13 +30,23 @@
     </div>
   </div>
   <script>
+    let sessionId = null;
+
     window.addEventListener("message", (event) => {
       if (event.data?.type === "position-qr-window") {
-        const { left, top } = event.data;
+        const { left, top, session_id } = event.data;
+        if (session_id) {
+          sessionId = session_id;
+        }
         window.moveTo(left, top);
+
+        const urlBase = `${window.location.origin}/done`;
+        const finalUrl = sessionId ? `${urlBase}?session=${encodeURIComponent(sessionId)}` : urlBase;
+
+        document.querySelector("img").src = `/qr-image${sessionId ? "?session=" + encodeURIComponent(sessionId) : ""}`;
+        document.getElementById("url-line").textContent = finalUrl;
       }
     });
-    document.getElementById("url-line").textContent = `${window.location.origin}/done`;
   </script>
 </body>
 </html>

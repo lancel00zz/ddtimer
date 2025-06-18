@@ -180,12 +180,14 @@
 
       <div class="qr-section">
         <img src="/qr-image" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
-        <p style="text-align: center; font-size: 0.9rem; font-weight: 400; font-family: sans-serif; margin-top: 40px;">
-          (c) Patrick Zakher – 
-          <a href="https://github.com/lancel00zz/facilitator-timer-app#facilitator-timer-app" target="_blank">
-            Facilitator Timer App v3.2.1
-          </a>
-        </p>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.0</div>
+        <div style="font-size: 0.85rem; color: #333; display: flex; gap: 12px; align-items: center;">
+          <span id="session-indicator"
+                onclick="openSettings()"
+                style="text-decoration: underline; cursor: pointer;">
+            No session ID currently defined
+          </span>
+        </div>
       </div>
     </div>
 
@@ -208,6 +210,27 @@
 
     toggleBtn.disabled = true;
     resetBtn.disabled = true;
+
+    // ─────────── Session Helper ───────────
+    function getCurrentSession() {
+      // Prefer sessionStorage if available for session persistence
+      const stored = sessionStorage.getItem("session");
+      if (stored && stored !== "default") {
+        return stored;
+      }
+      const text = document.getElementById("session-indicator").textContent;
+      if (text.startsWith("Session ID: ")) {
+        return text.replace("Session ID: ", "");
+      }
+      return "default";
+    }
+
+    // Restore session from sessionStorage on reload
+    window.addEventListener("DOMContentLoaded", () => {
+      const sessionIndicator = document.getElementById("session-indicator");
+      const stored = sessionStorage.getItem("session") || "default";
+      sessionIndicator.textContent = `Session ID: ${stored}`;
+    });
 
     // ─────────── Button Handlers ───────────
     optionsBtn.onclick = openSettings;
@@ -264,8 +287,13 @@
       // Position popup 25% from left, vertically centered
       const left = window.screenX + (window.outerWidth - width) * 0.25;
       const top  = window.screenY + (window.outerHeight - height) / 2;
+      const currentSession = getCurrentSession();
+      let url = "/edit-config";
+      if (currentSession !== "default") {
+        url += "?session=" + encodeURIComponent(currentSession);
+      }
       window.open(
-        "/edit-config",
+        url,
         "_blank",
         `width=${width},height=${height},left=${left},top=${top},resizable=yes`
       );
@@ -279,6 +307,12 @@
 
     // ─────────── Settings & QR Listeners ───────────
     function openSettings() {
+      // Ensure unique session: generate if missing or default
+      let sess = sessionStorage.getItem("session");
+      if (!sess || sess === "default") {
+        const newId = Math.random().toString(36).substr(2, 6).toUpperCase();
+        sessionStorage.setItem("session", newId);
+      }
       const btnRect = optionsBtn.getBoundingClientRect();
       const width = 500;
       const height = 400;
@@ -288,13 +322,17 @@
 
       const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
 
-      // Once the window is ready, send it a message to position itself
+      // Use getCurrentSession for session_id
+      const currentSession = getCurrentSession();
+
+      // Once the window is ready, send it a message to position itself and prefill session_id
       settingsWindow.addEventListener("load", () => {
         settingsWindow.postMessage(
           {
             type: "position-settings-window",
             left,
-            top
+            top,
+            prefill_session_id: currentSession
           },
           "*"
         );
@@ -311,13 +349,17 @@
 
       const qrWindow = window.open("/qr-popup", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
 
-      // Once the window is ready, send it a message to position itself
+      // Use getCurrentSession for session_id
+      const currentSession = getCurrentSession();
+
+      // Once the window is ready, send it a message to position itself and pass session_id
       qrWindow.addEventListener("load", () => {
         qrWindow.postMessage(
           {
             type: "position-qr-window",
             left,
-            top
+            top,
+            session_id: currentSession
           },
           "*"
         );
@@ -337,7 +379,8 @@
     }
     async function checkForNewScans() {
       try {
-        const res   = await fetch("/ping");
+        const currentSession = getCurrentSession();
+        const res = await fetch(`/ping?session=${encodeURIComponent(currentSession)}`);
         const count = parseInt(await res.text(), 10);
         if (count > lastSeenCount) {
           const redDot = document.querySelector("#left-dots .dot.red");
@@ -396,7 +439,8 @@
           leftDots.innerHTML  = "";
           rightDots.innerHTML = "";
           lastSeenCount = 0;
-          fetch("/reset", { method: "POST" });
+          const currentSession = getCurrentSession();
+          fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
 
           const dotSizeMap = {
             S: 1.0,
@@ -430,6 +474,22 @@
             }
           }
         }
+        // --- Session indicator update ---
+        const sessionIndicator = document.getElementById("session-indicator");
+        if (sessionIndicator) {
+          const session = event.data.session_id || "default";
+          sessionIndicator.textContent = `Session ID: ${session}`;
+          // Save selected session to sessionStorage
+          sessionStorage.setItem("session", session);
+          // Dynamically update QR image source
+          const qrImg = document.querySelector(".qr-section img");
+          if (qrImg) qrImg.src = `/qr-image?session=${encodeURIComponent(session)}`;
+        }
+        // Immediately apply this session's UI config without a reload
+        if (typeof loadAndApplyConfig === 'function') {
+          loadAndApplyConfig(true);
+        }
+        // ---
         console.log("✔️ Settings applied:", event.data);
       }
     });
@@ -439,9 +499,11 @@
     // Preserve the timer state
     const preservedTime = totalSeconds;
     try {
-      const resp = await fetch("/api/config");
+      const currentSession = getCurrentSession();
+      const resp = await fetch(`/api/config?session=${encodeURIComponent(currentSession)}`);
       if (!resp.ok) throw new Error("Cannot fetch /api/config");
       config = await resp.json();
+      console.log("🔧 Loaded session config:", config);
 
       // 1) If there's a background_image set (not null/empty), use it:
       if (config.ui && config.ui.background_image !== null && config.ui.background_image !== "") {
