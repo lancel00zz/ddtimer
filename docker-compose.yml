@@ -1,4 +1,5 @@
-
+## HOST_IP=$(ipconfig getifaddr en0) docker compose -f docker-compose.yml -p facilitator-prod up -d
+## ------------------- end ----------------
 services:
   facilitator:
     platform: linux/amd64
