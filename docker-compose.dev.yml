@@ -12,7 +12,8 @@
 ## ------------------- end ----------------
 services:
   facilitator:
-    image: lancel00zz/facilitator-timer-app:v3.0
+    image: lancel00zz/facilitator-timer-app:3.2.1
+    platform: linux/amd64              
     ports:
       - "5056:5000"
     volumes:
