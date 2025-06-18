@@ -39,13 +39,13 @@
           sessionId = session_id;
         }
         window.moveTo(left, top);
+
+        const urlBase = `${window.location.origin}/done`;
+        const finalUrl = sessionId ? `${urlBase}?session=${encodeURIComponent(sessionId)}` : urlBase;
+
+        document.querySelector("img").src = `/qr-image${sessionId ? "?session=" + encodeURIComponent(sessionId) : ""}`;
+        document.getElementById("url-line").textContent = finalUrl;
       }
-
-      const urlBase = `${window.location.origin}/done`;
-      const finalUrl = sessionId ? `${urlBase}?session=${encodeURIComponent(sessionId)}` : urlBase;
-
-      document.querySelector("img").src = `/qr-image${sessionId ? "?session=" + encodeURIComponent(sessionId) : ""}`;
-      document.getElementById("url-line").textContent = finalUrl;
     });
   </script>
 </body>

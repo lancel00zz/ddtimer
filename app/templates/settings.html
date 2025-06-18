@@ -111,7 +111,7 @@
     <button onclick="clearSessionId()">Clear</button>
   </div>
   <div class="session-help">
-    create a unique session ID to make this timer independent (e.g. patrick123, lab111) and work in isolation.
+    Keep or replace the session ID with something more memorable like patrick123, TeamGreen, Lab_jmx, ... It will become your session key for all backend calls, QR codes, dot counts, configu lookups, etc.
   </div>
 
   <div class="button-row">
@@ -136,11 +136,20 @@
         }, "*");
       }
 
+      // Store edit-config-url with session if present
+      if (sessionId) {
+        const url = new URL("/edit-config", window.location.origin);
+        url.searchParams.set("session", sessionId);
+        localStorage.setItem("edit-config-url", url.toString());
+      } else {
+        localStorage.removeItem("edit-config-url");
+      }
+
       window.close();
     }
 
     function clearSessionId() {
-      document.getElementById("session-id").value = "";
+      document.getElementById("session-id").value = "default";
     }
 
     // Listen for window position message and prefill session ID if provided

@@ -13,6 +13,19 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
+from collections import defaultdict
+from datetime import datetime
+
+session_configs = defaultdict(lambda: {
+    "ui": {
+        "background_color": "#b36ab4",
+        "font_family": "Oswald",
+        "font_color": "#000000",
+        "dot_size": "M",
+        "background_image": None
+    }
+})
+
 # 1) Define a Blueprint called "main"
 main = Blueprint("main", __name__)
 
@@ -47,30 +60,22 @@ def edit_config():
     config_path = os.path.join("config", "config.json")
 
     if request.method == "POST":
-        # ── 1) Read & validate JSON from the <textarea> ──
+        session_id = request.args.get("session", "default")
+
         raw_json = request.form.get("config_json", "").strip()
         try:
             parsed = json.loads(raw_json)
         except Exception as e:
             return f"<h1>Invalid JSON</h1><p>{e}</p>", 400
 
-        # Ensure "ui" key exists
         if "ui" not in parsed or not isinstance(parsed["ui"], dict):
             parsed["ui"] = {}
 
-        # ── 2) Handle the color-picker value ──
         picked_color = request.form.get("background_color", "").strip()
         if picked_color:
             parsed["ui"]["background_color"] = picked_color
             parsed["ui"]["background_image"] = None
 
-        try:
-            with open(config_path, "w") as f:
-                json.dump(parsed, f, indent=2)
-        except Exception as e:
-            return f"<h1>Failed to write config.json</h1><p>{e}</p>", 500
-
-        # ── 3) Handle optional background-image upload ──
         if "bg_file" in request.files:
             file = request.files["bg_file"]
             if file and file.filename:
@@ -80,33 +85,28 @@ def edit_config():
                     file.save(save_path)
                 except Exception as save_err:
                     return f"<h1>Failed to save image</h1><p>{save_err}</p>", 500
-
-                # Update JSON so that ui.background_image = <filename>
                 parsed["ui"]["background_image"] = filename
                 parsed["ui"]["background_color"] = None
-                try:
-                    with open(config_path, "w") as f:
-                        json.dump(parsed, f, indent=2)
-                except Exception as cfg_err:
-                    return f"<h1>Failed to update config.json</h1><p>{cfg_err}</p>", 500
 
-        # ── 4) Reload parent timer and close this popup ──
-        return """
+        session_configs[session_id] = parsed
+
+        return f"""
         <script>
-          window.opener.location.reload();
+          if (window.opener && window.opener.loadAndApplyConfig) {{
+            window.opener.loadAndApplyConfig(true);
+          }}
+          // Ensure session indicator persists
+          if (window.opener && window.opener.document.getElementById('session-indicator')) {{
+            window.opener.document.getElementById('session-indicator').textContent = 'Session ID: {session_id}';
+          }}
           window.close();
         </script>
         """
 
     # ─────────────────── If GET → render form with current JSON ───────────────────
-    try:
-        with open(config_path, "r") as f:
-            content = json.load(f)
-            pretty = json.dumps(content, indent=2)
-    except Exception as e:
-        content = {"error": str(e)}
-        pretty = json.dumps(content, indent=2)
-
+    session_id = request.args.get("session", "default")
+    content = session_configs[session_id]
+    pretty = json.dumps(content, indent=2)
     cfg_ui = content.get("ui", {}) if isinstance(content, dict) else {}
     current_color = cfg_ui.get("background_color") or "#d0f0ff"
 
@@ -118,8 +118,6 @@ def edit_config():
 
 
 # ───────────────────────────────────────────────────────────────────────
-from collections import defaultdict
-from datetime import datetime
 
 # In-memory session-scoped tracking for /done, /ping, /reset
 sessions = defaultdict(lambda: {"count": 0, "last_ping": datetime.now()})
@@ -199,18 +197,14 @@ def view_config():
 @main.route("/api/config")
 def api_config():
     """
-    Returns the exact /config/config.json as a JSON object (for fetch() on the frontend).
+    Returns the current session's UI config from memory.
     """
-    try:
-        cfg_path = os.path.join("config", "config.json")
-        with open(cfg_path, "r") as f:
-            content = json.load(f)
-            return jsonify(content)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    session_id = request.args.get("session", "default")
+    return jsonify(session_configs[session_id])
 
 
 # ───────────────────────────────────────────────────────────────────────
+
 @main.route("/qr-image")
 def qr_image():
     """
@@ -229,3 +223,15 @@ def qr_image():
     buf.seek(0)
 
     return send_file(buf, mimetype="image/png")
+
+
+# ───────────────────────────────────────────────────────────────────────
+# Endpoint to clear all sessions and configs (admin-only operation)
+@main.route("/clear-sessions", methods=["POST"])
+def clear_sessions():
+    """
+    Clears all in-memory session configs and scan counts.
+    """
+    session_configs.clear()
+    sessions.clear()
+    return "OK", 200

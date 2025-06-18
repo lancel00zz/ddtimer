@@ -6,7 +6,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Lato&family=Playfair+Display&family=Oswald&family=Source+Sans+Pro&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Courier New', monospace;
+      font-family: "Segoe UI", "Helvetica Neue", sans-serif;
       padding: 20px;
     }
     label {
@@ -59,10 +59,10 @@
 <body>
   <h1>Edit Timer Configuration</h1>
 
-  <form id="config-form" action="/edit-config" method="POST" enctype="multipart/form-data">
+  <form id="config-form" enctype="multipart/form-data">
 
     <div class="form-row">
-      <label for="background_color">Background:</label>
+      <label for="background_color">background:</label>
       <input type="color" id="background_color" name="background_color" value="{{ background_color }}" />
       <span>or</span>
       <input type="file" id="bg_file" name="bg_file" accept="image/*" style="opacity: 0; width: 0; height: 0; position: absolute;" />
@@ -71,12 +71,12 @@
     </div>
 
     <div class="form-row">
-      <label for="font_color">Font Color:  </label>
+      <label for="font_color">font color:  </label>
       <input type="color" id="font_color" name="font_color" value="{{ font_color }}" />
     </div>
 
     <div class="form-row">
-      <label for="font_family">Font Family:</label>
+      <label for="font_family">font family:</label>
       <select id="font_family" name="font_family">
         <option style="font-family: Arial;" value="Arial">Arial</option>
         <option style="font-family: 'Courier New';" value="Courier New">Courier New</option>
@@ -96,17 +96,23 @@
     </div>
 
     <div class="form-row">
-      <label>Dot Size:</label>
+      <label>dot size:</label>
       <label><input type="radio" name="dot_size" value="S" /> S</label>
       <label><input type="radio" name="dot_size" value="M" /> M</label>
       <label><input type="radio" name="dot_size" value="L" /> L</label>
       <label><input type="radio" name="dot_size" value="XL" /> XL</label>
     </div>
 
-    <a href="#" id="toggle-raw-config" style="display: inline-block; margin-top: 1em;">Show raw config ▼</a>
+    <a href="#" id="toggle-raw-config" style="display: block; margin-top: 1em; margin-bottom: 1em; color: black;">show raw config ▼</a>
     <div id="raw-config-wrapper" style="display: none;">
       <label for="config_json">Configuration (JSON):</label>
       <textarea id="config_json" name="config_json">{{ config_content }}</textarea>
+    </div>
+    <a href="#" id="toggle-danger-zone" style="display: block; margin-top: 1em; color: red;">
+      danger zone ▼
+    </a>
+    <div id="danger-zone-wrapper" style="display: none; margin-top: 0.2em; margin-left: 1.5em;">
+      <a href="#" id="clear-sessions-btn" style="color: red;">clear all sessions!</a>
     </div>
 
     <!-- ── Save / Cancel ── -->
@@ -180,19 +186,78 @@
     });
   </script>
 <script>
-  document.getElementById("config-form").addEventListener("submit", async (e) => {
+  window.addEventListener("DOMContentLoaded", () => {
+    // ... (other DOMContentLoaded logic, if any, can remain here)
+  });
+</script>
+<script>
+  // Toggle Danger Zone section
+  const dangerToggle = document.getElementById("toggle-danger-zone");
+  const dangerWrapper = document.getElementById("danger-zone-wrapper");
+  dangerToggle.addEventListener("click", e => {
     e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    try {
-      await fetch(form.action, {
-        method: form.method,
-        body: formData,
-      });
-      window.close();
-    } catch (err) {
-      console.error("Failed to save config:", err);
-    }
+    const hidden = dangerWrapper.style.display === "none";
+    dangerWrapper.style.display = hidden ? "block" : "none";
+    dangerToggle.textContent = hidden ? "danger zone ▲" : "danger zone ▼";
+  });
+  // Clear all sessions handler
+  const ADMIN_CLEAR_PASSWORD = "3.1415!";
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("clear-sessions-btn").addEventListener("click", e => {
+      e.preventDefault();
+      const pwd = prompt("Enter admin password PI! to clear all sessions:");
+      if (pwd !== ADMIN_CLEAR_PASSWORD) {
+        alert("Incorrect password. Sessions IDs have not been cleared.");
+        return;
+      }
+      if (!confirm("⚠️ This will clear ALL session data on the server. Any other user currently using the app would lose their Session IDs. Continue?")) return;
+      fetch("/clear-sessions", { method: "POST" })
+        .then(() => {
+          alert("All sessions cleared.");
+          // Reload opener if available
+          if (window.opener && window.opener.loadAndApplyConfig) {
+            window.opener.loadAndApplyConfig(true);
+          }
+        })
+        .catch(err => console.error("Failed to clear sessions:", err));
+    });
+  });
+</script>
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("config-form");
+    const configTextarea = document.getElementById("config_json");
+    const sessionParam = new URLSearchParams(window.location.search).get("session");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      // Always ensure config_json is up-to-date
+      formData.set("config_json", configTextarea.value);
+      const actionUrl = sessionParam
+        ? `/edit-config?session=${encodeURIComponent(sessionParam)}`
+        : "/edit-config";
+
+      try {
+        await fetch(actionUrl, {
+          method: "POST",
+          body: formData
+        });
+        // Instead of reloading, call opener.loadAndApplyConfig(true) if available
+        if (window.opener && typeof window.opener.loadAndApplyConfig === 'function') {
+          window.opener.loadAndApplyConfig(true);
+          if (sessionParam && window.opener.document.getElementById('session-indicator')) {
+            window.opener.document.getElementById('session-indicator').textContent = 'Session ID: ' + sessionParam;
+          }
+        } else {
+          // fallback: reload opener if function not available
+          window.opener?.location?.reload();
+        }
+        window.close();
+      } catch (err) {
+        console.error("Failed to save config:", err);
+      }
+    });
   });
 </script>
 <script>
