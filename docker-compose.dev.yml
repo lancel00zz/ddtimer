@@ -1,4 +1,12 @@
-## HOST_IP=$(ipconfig getifaddr en0) docker compose -f docker-compose.dev.yml -p facilitator-dev up -d
+## this docker compose is for testing new dev. It does:
+## 1. pull the image mentioned below from dockerhub
+## 2. assign dev port (5056) to flask internal port (5000) - beware (falsed is forced to 5000 because of the last line of this file. Otherwise it would remain 5050 as defined in the dockerhub image!!)
+## 3. loads the dev environment (/Documents/Github/facilitator-app/...) inside the container. Gives you real access to the dev files to test!!
+## to access the file, use chrome localhost:5056 or <IP_address>:5056 (better for QRs)
+## run the line below to create your environement:
+## docker compose -f docker-compose.dev.yml -p facilitator-dev up -d
+## or, to see logs in realtime (annoying sometimes):
+## docker compose -f docker-compose.dev.yml -p facilitator-dev up 
 ## ------------------- end ----------------
 services:
   facilitator:
@@ -11,6 +19,5 @@ services:
       - ./app:/app/app
       - ./config:/app/config
     environment:
-      - HOST_IP=${HOST_IP}
       - FLASK_ENV=development
     command: flask run --host=0.0.0.0 --port=5000 --reload
