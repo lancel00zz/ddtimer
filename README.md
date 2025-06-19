@@ -29,6 +29,19 @@ A lightweight, fullscreen-ready web app for trainers and facilitators to manage 
 - 🧪 Set timer to `-1` to trigger flashing red timeout immediately (for testing)
 
 ---
+
+## 🚀 What's New in Version 4.0
+
+- 🧠 **Session-aware timer logic**: multiple independent sessions (from multiple trainers) can now run in parallel
+- ✍️ Manually define a session ID (eg `PatrickLab1`) or let the system generate a random one
+- 🔗 QR codes are now session-specific — dots and settings are scoped per session
+- 🔄 Refreshing or switching sessions automatically loads the correct background, font, and config
+- ❗️New “Danger Zone” section in the Config panel to clear all sessions (with password prompt)
+- 🔐 Persistent settings per session stored in Flask memory — clean and fast
+- 👁‍🗨 Embedded QR code and pop-up now reflect the correct session and IP-based access path
+- 🧼 Improved session switching and isolation across multiple browser tabs
+
+---
 ## What's New in Version 3.2.1
 
 - 📗 info link at the bottom of the app that takes to Github public repo readme.md
