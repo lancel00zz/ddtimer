@@ -211,9 +211,10 @@ def qr_image():
     Dynamically generate a PNG QR code that encodes the URL of /done.
     When a phone scans this QR, it will open https://<host>/done and register a check-in.
     """
-    # Build the full /done URL based on whatever host called us (ngrok or Railway)
+    # Build the full /done URL dynamically using request.url_root
     session_id = request.args.get("session")
-    done_url = request.url_root.rstrip("/") + "/done"
+    base = request.url_root.rstrip('/')
+    done_url = f"{base}/done"
     if session_id:
         done_url += f"?session={session_id}"
 

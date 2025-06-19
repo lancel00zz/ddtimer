@@ -179,8 +179,8 @@
       </div>
 
       <div class="qr-section">
-        <img src="/qr-image" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.0</div>
+        <img src="/qr-image?session=default" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.02</div>
         <div style="font-size: 0.85rem; color: #333; display: flex; gap: 12px; align-items: center;">
           <span id="session-indicator"
                 onclick="openSettings()"
@@ -558,6 +558,18 @@
 
   // On DOMContentLoaded (i.e. when page first loads), run:
   window.addEventListener("DOMContentLoaded", loadAndApplyConfig);
+
+  // ─── Initialize embedded QR with current session ───
+  window.addEventListener("DOMContentLoaded", () => {
+    const session = getCurrentSession();
+    const qrImg = document.querySelector(".qr-section img");
+    if (qrImg) {
+      // include session param if not default
+      qrImg.src = session && session !== "default"
+        ? `/qr-image?session=${encodeURIComponent(session)}`
+        : "/qr-image";
+    }
+  });
 
   // You can also call loadAndApplyConfig() after each time you reload/reset the dots, etc.
   </script>

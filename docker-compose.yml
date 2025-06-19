@@ -1,10 +1,14 @@
-
+## this creates a docker container based on the dockerhub image below.
+## run it in chrome localhost:5050 or <IP_address>:5050 (better for QR codes)
+## to build it:
+## docker compose -f docker-compose.yml -p facilitator-prod up
+## or in verbose mode (in terminal with an ongoing console):
+## docker compose -f docker-compose.yml -p facilitator-prod up -d
+## ------------------- end ----------------
 services:
   facilitator:
     platform: linux/amd64
     image: lancel00zz/facilitator-timer-app:4.0
-    environment:
-      - HOST_IP=${HOST_IP}
     ports:
       - "5050:5050"
     restart: unless-stopped
