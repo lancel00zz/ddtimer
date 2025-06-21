@@ -4,30 +4,67 @@ import os
 import json
 import qrcode
 
+# ── helper to load default UI from config/config.json at every startup ──
+from pathlib import Path
+
+def _load_default_from_file() -> dict:
+    cfg_path = Path("config/config.json")
+    try:
+        with cfg_path.open() as f:
+            return json.load(f)
+    except Exception as exc:
+        # Fallback to hard‑coded sane defaults if file missing / bad
+        print(f"[facilitator‑timer] Could not read {cfg_path}: {exc}")
+        return {
+            "ui": {
+                "background_color": "#b36ab4",
+                "font_family": "Oswald",
+                "font_color": "#000000",
+                "dot_size": "M",
+                "background_image": None
+            }
+        }
+import random
+import string
+
 from flask import (
     Blueprint,
     render_template,
     request,
     send_file,
-    jsonify
+    jsonify,
+    abort
 )
 from werkzeug.utils import secure_filename
 
 from collections import defaultdict
 from datetime import datetime
 
-session_configs = defaultdict(lambda: {
-    "ui": {
-        "background_color": "#b36ab4",
-        "font_family": "Oswald",
-        "font_color": "#000000",
-        "dot_size": "M",
-        "background_image": None
-    }
-})
+session_configs = defaultdict(lambda: _load_default_from_file())
 
 # 1) Define a Blueprint called "main"
 main = Blueprint("main", __name__)
+
+# Admin‑only one‑shot flag that allows an intentional write on “default”
+ALLOW_DEFAULT_WRITE = False
+# ─────────────────────────────────────────────────────────────
+ADMIN_CLEAR_PASSWORD = "3.1415!"   # reuse same password
+
+@main.route("/unlock-default", methods=["POST"])
+def unlock_default():
+    """
+    One‑shot admin call that sets ALLOW_DEFAULT_WRITE = True
+    so the very next POST /edit-config?session=default
+    really writes to config.json.
+    """
+    data = request.get_json(silent=True) or {}
+    pwd = data.get("pwd", "")
+    if pwd != ADMIN_CLEAR_PASSWORD:
+        # Wrong password → 403
+        abort(403)
+    global ALLOW_DEFAULT_WRITE
+    ALLOW_DEFAULT_WRITE = True
+    return "OK", 200
 
 
 # ───────────────────────────────────────────────────────────────────────
@@ -62,6 +99,18 @@ def edit_config():
     if request.method == "POST":
         session_id = request.args.get("session", "default")
 
+        # ── 1) If user is trying to edit *default* but admin flag not set → fork
+        global ALLOW_DEFAULT_WRITE
+        if session_id == "default" and not ALLOW_DEFAULT_WRITE:
+            # Generate 6‑char mixed ID
+            new_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            session_id = new_id
+            switch_script = True
+        else:
+            switch_script = False
+            # Reset the admin override after a legitimate default save
+            ALLOW_DEFAULT_WRITE = False
+
         raw_json = request.form.get("config_json", "").strip()
         try:
             parsed = json.loads(raw_json)
@@ -90,18 +139,11 @@ def edit_config():
 
         session_configs[session_id] = parsed
 
-        return f"""
-        <script>
-          if (window.opener && window.opener.loadAndApplyConfig) {{
-            window.opener.loadAndApplyConfig(true);
-          }}
-          // Ensure session indicator persists
-          if (window.opener && window.opener.document.getElementById('session-indicator')) {{
-            window.opener.document.getElementById('session-indicator').textContent = 'Session ID: {session_id}';
-          }}
-          window.close();
-        </script>
-        """
+        # Respond with JSON so the fetch() in edit‑config.html can act on it
+        if switch_script:   # we forked into new_id
+            return jsonify({"new_session": session_id}), 200
+        else:
+            return jsonify({"new_session": None}), 200
 
     # ─────────────────── If GET → render form with current JSON ───────────────────
     session_id = request.args.get("session", "default")
