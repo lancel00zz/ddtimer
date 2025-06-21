@@ -195,6 +195,13 @@
   </div>
 
   <script>
+    // ─── Detect ?session=XYZ on first load and store ───
+    (function initSessionFromURL() {
+      const urlSess = new URLSearchParams(window.location.search).get("session");
+      if (urlSess) {
+        sessionStorage.setItem("session", urlSess);
+      }
+    })();
     let lastKnownBackgroundImage = null;
 
     let totalSeconds = 0;
@@ -225,11 +232,19 @@
       return "default";
     }
 
+    // Keep address bar in sync with current session
+    function updateAddressBar(session) {
+      const url = new URL(window.location);
+      url.searchParams.set("session", session);
+      window.history.replaceState(null, "", url);
+    }
+
     // Restore session from sessionStorage on reload
     window.addEventListener("DOMContentLoaded", () => {
       const sessionIndicator = document.getElementById("session-indicator");
       const stored = sessionStorage.getItem("session") || "default";
       sessionIndicator.textContent = `Session ID: ${stored}`;
+      updateAddressBar(stored);
     });
 
     // ─────────── Button Handlers ───────────
@@ -485,6 +500,7 @@
           sessionIndicator.textContent = `Session ID: ${session}`;
           // Save selected session to sessionStorage
           sessionStorage.setItem("session", session);
+          updateAddressBar(session);
           // Dynamically update QR image source
           const qrImg = document.querySelector(".qr-section img");
           if (qrImg) qrImg.src = `/qr-image?session=${encodeURIComponent(session)}`;
