@@ -411,10 +411,14 @@
     window.addEventListener("message", function (event) {
       console.log("🟢 Received message from settings:", event.data);
       if (event.data.type === "settings") {
-        const { minutes, teams } = event.data;
-        if (typeof minutes === "number" && !isNaN(minutes)) {
-          totalSeconds = minutes * 60;
+        const { minutes, seconds, teams, green_teams, session_id } = event.data;
+        if (
+          typeof minutes === "number" && !isNaN(minutes) &&
+          typeof seconds === "number" && !isNaN(seconds)
+        ) {
+          totalSeconds = minutes * 60 + seconds;
           if (minutes === -1) {
+            // existing negative special-case
             totalSeconds = 0;
             timerDisplay.textContent = "00:00";
             timerDisplay.style.color = "red";
