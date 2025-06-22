@@ -653,6 +653,81 @@ toggleBtn.addEventListener("click", () => {
       const secs = totalSeconds % 60;
       timerDisplay.textContent = formatTime(mins, secs);
     }
+
+    // ─────────── Dot Flight Animation Helper ───────────
+    /**
+     * Animate a red dot flying up → across → down, then turning green.
+     * Uses translate transforms for buttery‑smooth motion.
+     * If viewport ≤ 600 px, the animation is skipped.
+     */
+    function animateDotFlight(redDot) {
+      // Skip animation entirely on compact layout
+      if (window.matchMedia("(max-width: 600px)").matches) {
+        redDot.classList.replace("red", "green");
+        document.getElementById("right-dots").appendChild(redDot);
+        return;
+      }
+
+      const startRect = redDot.getBoundingClientRect();
+      const rightCol  = document.getElementById("right-dots");
+      const endRect   = rightCol.getBoundingClientRect();
+
+      // Clone node for animation
+      const clone = redDot.cloneNode(false);
+      clone.style.position = "fixed";
+      clone.style.left = `${startRect.left}px`;
+      clone.style.top  = `${startRect.top}px`;
+      clone.style.width  = `${startRect.width}px`;
+      clone.style.height = `${startRect.height}px`;
+      clone.style.borderRadius = "50%";
+      clone.style.backgroundColor = "red";
+      clone.style.zIndex = 9999;
+      clone.style.willChange = "transform, background-color";
+      document.body.appendChild(clone);
+
+      // Remove original immediately
+      redDot.remove();
+
+      const upDistance    = -(startRect.top - 40); // pixel shift to reach 40 px from viewport top
+      const acrossDistance= (endRect.left + (endRect.width - startRect.width) / 2) - startRect.left;
+      const downDistance  = (endRect.bottom - startRect.height / 2) - 40;
+
+      // Helper to compose translate
+      const tr = (dx, dy) => `translate(${dx}px, ${dy}px)`;
+
+      // ── Stage 1: smooth rise (two‑frame hack ensures transition fires) ──
+      clone.style.transform = tr(0, 0);          // starting point
+      requestAnimationFrame(() => {
+        clone.style.transition = "transform 0.5s ease-out";
+        requestAnimationFrame(() => {            // second frame → actual move
+          clone.style.transform = tr(0, upDistance);
+        });
+      });
+
+      // ── Stage 2: slide across ──
+      setTimeout(() => {
+        clone.style.transition = "transform 0.8s ease-out";
+        clone.style.transform  = tr(acrossDistance, upDistance);
+      }, 550);
+
+      // ── Stage 3: colour change + drop ──
+      setTimeout(() => {
+        clone.style.transition = "transform 0.5s ease-in, background-color 0.2s linear";
+        clone.style.transform  = tr(acrossDistance, upDistance + downDistance);
+        clone.style.backgroundColor = "green";
+      }, 1400);
+
+      // ── Finish: commit real green dot ──
+      setTimeout(() => {
+        const newDot = document.createElement("div");
+        newDot.classList.add("dot", "green");
+        newDot.style.width  = clone.style.width;
+        newDot.style.height = clone.style.height;
+        rightCol.appendChild(newDot);
+        clone.remove();
+      }, 1950);
+    }
+
     async function checkForNewScans() {
       try {
         const currentSession = getCurrentSession();
@@ -661,9 +736,7 @@ toggleBtn.addEventListener("click", () => {
         if (count > lastSeenCount) {
           const redDot = document.querySelector("#left-dots .dot.red");
           if (redDot) {
-            redDot.classList.remove("red");
-            redDot.classList.add("green");
-            document.getElementById("right-dots").appendChild(redDot);
+            animateDotFlight(redDot);
             lastSeenCount = count;
           }
         }
@@ -710,12 +783,37 @@ window.addEventListener("message", function (event) {
         (typeof green_teams !== "number" || green_teams === 0);
 
       if (totalSeconds === 0 && noDotsRequested) {
+        // Treat as fresh / no‑config
         hasConfig = false;
         optionsBtn.classList.add("hidden");
         resetBtn.classList.add("hidden");
         resetStage = 0;
         updateButtonsLayout();
-        return;   // nothing else to do
+
+        /* ── Still apply session‑id change, if provided ── */
+        if (session_id !== undefined) {
+          const session = session_id || "default";
+          const sessionIndicator = document.getElementById("session-indicator");
+          if (sessionIndicator) {
+            sessionIndicator.textContent = `Session ID: ${session}`;
+          }
+          sessionStorage.setItem("session", session);
+          updateAddressBar(session);
+
+          // Refresh embedded QR
+          const qrImg = document.querySelector(".qr-section img");
+          if (qrImg) {
+            qrImg.src = session && session !== "default"
+              ? `/qr-image?session=${encodeURIComponent(session)}`
+              : "/qr-image";
+          }
+
+          // Reload this session's UI config
+          if (typeof loadAndApplyConfig === "function") {
+            loadAndApplyConfig(true);
+          }
+        }
+        return;   // done
       }
       updateTimerDisplay();
       timerDisplay.style.color      = "";

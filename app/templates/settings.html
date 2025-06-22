@@ -152,6 +152,14 @@
       window.close();
     }
 
+    // Allow Enter/Return to trigger the Set action
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();   // avoid submitting any implicit forms
+        applySettings();
+      }
+    });
+
     function clearSessionId() {
       document.getElementById("session-id").value = "default";
     }
