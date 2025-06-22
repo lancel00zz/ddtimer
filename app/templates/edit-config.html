@@ -54,6 +54,10 @@
       font-size: 0.9em;
       margin-left: 10px;
     }
+    .danger-action {
+      display: block;
+      margin-left: 20px;   /* indent both danger‑zone actions equally */
+    }
   </style>
 </head>
 <body>
@@ -111,8 +115,9 @@
     <a href="#" id="toggle-danger-zone" style="display: block; margin-top: 1em; color: red;">
       danger zone ▼
     </a>
-    <div id="danger-zone-wrapper" style="display: none; margin-top: 0.2em; margin-left: 1.5em;">
-      <a href="#" id="clear-sessions-btn" style="color: red;">clear all sessions!</a>
+    <div id="danger-zone-wrapper" style="display: none; margin-top: 0.2em;">
+      <a href="#" id="clear-sessions-btn" class="danger-action" style="color: red;">clear all session IDs!</a>
+      <a href="#" id="unlock-default-btn" class="danger-action" style="color: red;">unlock default config</a>
     </div>
 
     <!-- ── Save / Cancel ── -->
@@ -230,6 +235,32 @@
     });
   });
 </script>
+<!-- Unlock default handler -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const ADMIN_CLEAR_PASSWORD = "3.1415!";   // same as backend
+    const unlockBtn = document.getElementById("unlock-default-btn");
+    unlockBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const pwd = prompt("Enter admin password to unlock default:");
+      if (pwd !== ADMIN_CLEAR_PASSWORD) {
+        alert("Incorrect password. Default remains read‑only.");
+        return;
+      }
+      try {
+        const res = await fetch("/unlock-default", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pwd })
+        });
+        if (!res.ok) throw new Error("Server refused unlock");
+        alert("Default profile unlocked for ONE save.\nMake your edits, click Save, then it will lock again.");
+      } catch (err) {
+        alert("Failed to unlock default: " + err);
+      }
+    });
+  });
+</script>
 <script>
   window.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("config-form");
@@ -241,23 +272,31 @@
       const formData = new FormData(form);
       // Always ensure config_json is up-to-date
       formData.set("config_json", configTextarea.value);
-      const actionUrl = sessionParam
-        ? `/edit-config?session=${encodeURIComponent(sessionParam)}`
-        : "/edit-config";
+      // Always include session param, even if default
+      const sessionParamVal = sessionParam !== null ? sessionParam : "default";
+      const actionUrl = `/edit-config?session=${encodeURIComponent(sessionParamVal)}`;
 
       try {
-        await fetch(actionUrl, {
+        const resp = await fetch(actionUrl, {
           method: "POST",
           body: formData
         });
-        // Instead of reloading, call opener.loadAndApplyConfig(true) if available
+        const data = await resp.json();
+
+        // If backend forked default → new_session present
+        if (data.new_session) {
+          sessionStorage.setItem("session", data.new_session);
+          alert("Hello there! 🐸\n\nJust so you know, your changes will be saved under session " + data.new_session + "\nbecause the *Default* Session ID layout cannot be modified.");
+          if (window.opener && window.opener.document) {
+            const ind = window.opener.document.getElementById("session-indicator");
+            if (ind) ind.textContent = "Session ID: " + data.new_session;
+          }
+        }
+
+        // Always refresh opener config
         if (window.opener && typeof window.opener.loadAndApplyConfig === 'function') {
           window.opener.loadAndApplyConfig(true);
-          if (sessionParam && window.opener.document.getElementById('session-indicator')) {
-            window.opener.document.getElementById('session-indicator').textContent = 'Session ID: ' + sessionParam;
-          }
         } else {
-          // fallback: reload opener if function not available
           window.opener?.location?.reload();
         }
         window.close();

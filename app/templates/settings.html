@@ -91,8 +91,10 @@
 <body>
   <div class="input-row">
     <label for="time-input" style="width: 100px;">countdown:</label>
-    <input type="number" id="time-input" min="1" style="width: 60px;" />
-    <span>min</span>
+    <input type="number" id="time-input" min="0" style="width: 60px;" />
+    <span style="margin-right: 20px;">min</span>
+    <input type="number" id="seconds-input" min="0" max="59" style="width: 60px;" />
+    <span>secs</span>
   </div>
 
   <div class="input-row">
@@ -122,6 +124,7 @@
   <script>
     function applySettings() {
       const minutes = parseInt(document.getElementById("time-input").value, 10);
+      const seconds = parseInt(document.getElementById("seconds-input").value, 10);
       const red = parseInt(document.getElementById("red-teams").value, 10);
       const green = parseInt(document.getElementById("green-teams").value, 10);
       const sessionId = document.getElementById("session-id").value.trim();
@@ -130,6 +133,7 @@
         window.opener.postMessage({
           type: "settings",
           minutes,
+          seconds,
           teams: red,
           green_teams: green,
           session_id: sessionId || null
@@ -147,6 +151,14 @@
 
       window.close();
     }
+
+    // Allow Enter/Return to trigger the Set action
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();   // avoid submitting any implicit forms
+        applySettings();
+      }
+    });
 
     function clearSessionId() {
       document.getElementById("session-id").value = "default";
@@ -174,9 +186,13 @@
         const rightDots = window.opener.document.querySelectorAll("#right-dots .dot.green").length;
 
         if (timerText) {
-          const [minStr] = timerText.split(":");
+          const [minStr, secStr] = timerText.split(":");
           const minutes = parseInt(minStr, 10);
-          if (!isNaN(minutes)) document.getElementById("time-input").value = minutes;
+          // Prefill logic for minutes and seconds
+          if (!isNaN(minutes)) {
+            document.getElementById("time-input").value = Math.floor(minutes);
+            document.getElementById("seconds-input").value = 0;
+          }
         }
 
         document.getElementById("red-teams").value = leftDots;

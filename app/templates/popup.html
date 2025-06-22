@@ -73,10 +73,18 @@
       line-height: 1;
     }
 
-    .buttons {
-      display: flex;
+    .buttons{
+      display: grid;
+      grid-template-columns: 60px auto 60px;  /* Set | Start/Stop | Reset */
+      justify-content: center;                /* centre the middle column under timer */
+      align-items: center;
       gap: 20px;
       margin-top: 20px;
+      width: 100%;
+    }
+    /* when only the Start/Stop pill is visible, collapse to a single column */
+    .buttons.single{
+      grid-template-columns: auto;
     }
 
     button {
@@ -86,6 +94,89 @@
       border-radius: 8px;
       background-color: #e0e0e0;
       cursor: pointer;
+    }
+    /* ─── Pill‑button look & feel ─────────────────────────────── */
+:root{
+  --btn-primary:#333;   /* will be overwritten by JS loader   */
+  --btn-secondary:#666; /* ditto                             */
+}
+
+    /* Icon-only style for the bottom-left Tools button */
+#config-button.icon-only{
+  border: none;
+  background: none;
+  padding: 0;
+  width: auto;
+  height: auto;
+  color: var(--btn-primary);   /* match primary font colour */
+}
+/* Bigger cog icon (2×) */
+#config-button.icon-only svg{
+  width:2em;
+  height:2em;
+}
+
+.buttons button{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:inherit;
+  font-size:1.25rem;        /* was 1rem → bigger */
+  font-weight:600;          /* bolder text */
+  padding:10px 22px;
+  border-radius:9999px;
+  border:2px solid currentColor;
+  background:none;
+  cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.buttons button.primary-idle   {color:var(--btn-primary);}
+.buttons button.primary-active{
+  background:var(--btn-primary);
+  color:#fff;
+}
+.buttons button.secondary      {color:var(--btn-secondary);}
+/* small glyph size (linked to button font) */
+.buttons .icon,
+.buttons svg{
+  width:1.35em;     /* 35 % larger than before */
+  height:1.35em;
+  line-height:1;
+}
+    /* perfectly‑round buttons */
+    .buttons button.round{
+      width:60px;
+      height:60px;
+      padding:0;
+      justify-content:center;  /* centres Set text or icon */
+      border-radius:50%;
+      flex-shrink:0;           /* keep them circular in flex layout */
+      /* keep circle size but make label/icon scale with overall font */
+      font-size:1.25rem;
+      font-weight:600;
+    }
+    .buttons button.round .icon{
+      margin:0;                /* no horizontal gap needed */
+    }
+
+    /* ── Global round‑button helper (for config button outside .buttons grid) ── */
+    .round{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:60px;
+      height:60px;
+      padding:0;
+      border-radius:50%;
+      border:2px solid currentColor;
+      font-size:1.25rem;
+      font-weight:600;
+      background:none;
+      cursor:pointer;
+    }
+    .round svg{
+      width:1.35em;
+      height:1.35em;
     }
 
     .qr-section {
@@ -101,9 +192,10 @@
       height: 140px;
     }
 
-    .qr-label {
-      font-size: 0.9rem;
-      color: #333;
+    .qr-label{
+      font-size:0.85rem;
+      color:var(--btn-secondary);  /* softer tint based on primary font */
+      opacity:0.6;                /* less visual weight */
     }
 
     @keyframes flash {
@@ -118,6 +210,20 @@
     }
 
     /* Responsive layout for 3 stages */
+    /* ── Reusable helper: .hidden { display:none !important; } ── */
+    .hidden{
+      display:none !important;
+    }
+
+    @media (min-width: 651px){
+      #config-button{
+        position: fixed;
+        left: 80px;      /* was 20px; keeps clear of left‑dot column */
+        bottom: 20px;
+        margin: 0;
+      }
+    }
+
     @media (max-width: 650px) {
       #config-button {
         display: none !important;
@@ -171,23 +277,72 @@
     <div class="center">
       <h1 id="timer-display" class="timer-display">00:00</h1>
       <div class="buttons">
-        <button id="toggle-button" disabled>Start</button>
-        <button id="options-button" title="Open Settings">Set</button>
-        <button id="reset-button" title="Reset App">Reset</button>
-        <span style="margin-left: 20px;"></span> <!-- ← extra spacing -->
-        <button id="config-button" title="View Config">🛠️</button>
+        <button id="options-button"
+                class="secondary round hidden"
+                title="Open Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round"
+               class="icon icon-tabler icon-tabler-pencil">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+            <path d="M13.5 6.5l4 4" />
+          </svg>
+        </button>
+
+        <button id="toggle-button"
+                class="primary-idle">
+          <!-- Play icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round"
+               class="icon icon-tabler icon-tabler-player-play">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M7 4v16l13 -8z" />
+          </svg>
+          Start
+        </button>
+
+        <button id="reset-button"
+                class="secondary round hidden"
+                title="Reset App">
+          <!-- Rotate‑clockwise icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round"
+               class="icon icon-tabler icon-tabler-rotate-clockwise">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5" />
+          </svg>
+        </button>
       </div>
+
+      <!-- Tools (config) button pinned bottom‑left via CSS -->
+      <button id="config-button"
+              class="secondary icon-only"
+              title="View Config">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round"
+             class="icon icon-tabler icon-tabler-settings">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
+          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+        </svg>
+      </button>
 
       <div class="qr-section">
         <img src="/qr-image?session=default" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.02</div>
-        <div style="font-size: 0.85rem; color: #333; display: flex; gap: 12px; align-items: center;">
+
+        <div style="font-size: 0.85rem; display: flex; gap: 12px; align-items: center;">
           <span id="session-indicator"
                 onclick="openSettings()"
-                style="text-decoration: underline; cursor: pointer;">
+                style="text-decoration: underline; cursor: pointer; color: var(--btn-primary);">
             No session ID currently defined
           </span>
         </div>
+
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.02</div>
       </div>
     </div>
 
@@ -195,6 +350,13 @@
   </div>
 
   <script>
+    // ─── Detect ?session=XYZ on first load and store ───
+    (function initSessionFromURL() {
+      const urlSess = new URLSearchParams(window.location.search).get("session");
+      if (urlSess) {
+        sessionStorage.setItem("session", urlSess);
+      }
+    })();
     let lastKnownBackgroundImage = null;
 
     let totalSeconds = 0;
@@ -207,9 +369,40 @@
     const resetBtn     = document.getElementById("reset-button");
     const configBtn    = document.getElementById("config-button");
     const timerDisplay = document.getElementById("timer-display");
+    const buttonsContainer = document.querySelector(".buttons");
+    function updateButtonsLayout() {
+      const onlyMiddle = optionsBtn.classList.contains("hidden") &&
+                         resetBtn.classList.contains("hidden");
+      buttonsContainer.classList.toggle("single", onlyMiddle);
+    }
 
-    toggleBtn.disabled = true;
-    resetBtn.disabled = true;
+    // Inline SVG markup for play/stop (Tabler Icons, MIT)
+    const playSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round"
+           class="icon icon-tabler icon-tabler-player-play">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M7 4v16l13 -8z" />
+      </svg>`;
+    const stopSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+           viewBox="0 0 24 24" fill="currentColor"
+           class="icon icon-stop-square">
+        <path fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z"/>
+      </svg>`;
+
+    // ─────────── Workflow flags ───────────
+    let hasConfig = false;  // becomes true after the user saves settings once
+    let resetStage  = 0;   // 0 → first click will restore; 1 → next click will zero & hide
+    const lastConfigured = {
+      seconds: 0,
+      red: 0,
+      green: 0,
+      dotSize: "S"
+    };
 
     // ─────────── Session Helper ───────────
     function getCurrentSession() {
@@ -225,18 +418,32 @@
       return "default";
     }
 
+    // Keep address bar in sync with current session
+    function updateAddressBar(session) {
+      const url = new URL(window.location);
+      url.searchParams.set("session", session);
+      window.history.replaceState(null, "", url);
+    }
+
     // Restore session from sessionStorage on reload
     window.addEventListener("DOMContentLoaded", () => {
       const sessionIndicator = document.getElementById("session-indicator");
       const stored = sessionStorage.getItem("session") || "default";
       sessionIndicator.textContent = `Session ID: ${stored}`;
+      updateAddressBar(stored);
     });
 
     // ─────────── Button Handlers ───────────
     optionsBtn.onclick = openSettings;
 
-    toggleBtn.addEventListener("click", () => {
-      if (!intervalId && totalSeconds > 0) {
+toggleBtn.addEventListener("click", () => {
+  // If timer is at 0 OR no config yet → open Settings dialog
+  if (totalSeconds === 0 || !hasConfig) {
+    openSettings();
+    return;
+  }
+
+  if (!intervalId && totalSeconds > 0) {
         // Start timer
         intervalId = setInterval(() => {
           totalSeconds--;
@@ -244,40 +451,109 @@
           if (totalSeconds <= 0) {
             clearInterval(intervalId);
             intervalId = null;
-            toggleBtn.textContent = "Start";
+            toggleBtn.innerHTML = `${playSvg} Start`;
+            toggleBtn.classList.remove("primary-active");
+            toggleBtn.classList.add("primary-idle");
             toggleBtn.disabled = true;
             timerDisplay.textContent = "00:00";
             timerDisplay.style.color = "red";
             timerDisplay.classList.add("flashing-red");
           }
         }, 1000);
-        toggleBtn.textContent = "Stop";
+        toggleBtn.innerHTML = `${stopSvg} Stop`;
+        toggleBtn.classList.remove("primary-idle");
+        toggleBtn.classList.add("primary-active");
+        resetBtn.classList.remove("hidden");
+        resetStage = 0;
+        updateButtonsLayout();
       } else {
         // Pause timer
         clearInterval(intervalId);
         intervalId = null;
-        toggleBtn.textContent = "Start";
+        toggleBtn.innerHTML = `${playSvg} Start`;
+        toggleBtn.classList.remove("primary-active");
+        toggleBtn.classList.add("primary-idle");
       }
     });
 
     resetBtn.addEventListener("click", () => {
-      clearInterval(intervalId);
-      intervalId = null;
-      totalSeconds    = 0;
-      lastSeenCount   = 0;
-      timerDisplay.textContent       = "00:00";
-      timerDisplay.style.color       = "";
-      timerDisplay.style.fontWeight  = "";
-      timerDisplay.classList.remove("flashing-red");
-      // Reapply configured font color if present
-      if (config && config.ui && config.ui.font_color) {
-        timerDisplay.style.color = config.ui.font_color;
+      if (resetStage === 0) {
+        /* ── FIRST CLICK: restore to last configured values ───────────── */
+        clearInterval(intervalId);
+        intervalId = null;
+        lastSeenCount = 0;                // avoid false “🏁” state on next ping
+
+        totalSeconds = lastConfigured.seconds;
+        updateTimerDisplay();
+        timerDisplay.style.color      = config?.ui?.font_color || "";
+        timerDisplay.style.fontWeight = "";
+        timerDisplay.classList.remove("flashing-red");
+
+        // Regenerate dots
+        document.getElementById("left-dots").innerHTML  = "";
+        document.getElementById("right-dots").innerHTML = "";
+        const currentSession = getCurrentSession();
+        fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
+
+        const dotSizeMap = { S:1.0, M:1.15, L:1.3, XL:1.5 };
+        const scale = dotSizeMap[lastConfigured.dotSize] || 1.0;
+        const px = `${Math.round(16 * scale)}px`;
+
+        for (let i = 0; i < lastConfigured.red; i++) {
+          const dot = document.createElement("div");
+          dot.classList.add("dot", "red");
+          dot.style.width = px;
+          dot.style.height = px;
+          document.getElementById("left-dots").appendChild(dot);
+        }
+        for (let i = 0; i < lastConfigured.green; i++) {
+          const dot = document.createElement("div");
+          dot.classList.add("dot", "green");
+          dot.style.width = px;
+          dot.style.height = px;
+          document.getElementById("right-dots").appendChild(dot);
+        }
+
+        toggleBtn.innerHTML = `${playSvg} Start`;
+        toggleBtn.classList.remove("primary-active");
+        toggleBtn.classList.add("primary-idle");
+        toggleBtn.disabled = false;      // allow starting again
+
+        // Stay visible; prepare for stage‑2 reset
+        resetStage = 1;
+        updateButtonsLayout();
+      } else {
+        /* ── SECOND CLICK: full reset to zero, hide Reset ─────────────── */
+        clearInterval(intervalId);
+        intervalId = null;
+        lastSeenCount = 0;                // fully clear scan state
+
+        totalSeconds = 0;
+        updateTimerDisplay();
+        timerDisplay.style.color      = config?.ui?.font_color || "";
+        timerDisplay.style.fontWeight = "";
+        timerDisplay.classList.remove("flashing-red");
+
+        // Clear dots & backend
+        document.getElementById("left-dots").innerHTML  = "";
+        document.getElementById("right-dots").innerHTML = "";
+        const currentSession = getCurrentSession();
+        fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
+
+        // Hide Reset, hide Set, force new config next time
+        resetBtn.classList.add("hidden");
+        optionsBtn.classList.add("hidden");
+        hasConfig  = false;
+        resetStage = 0;
+
+        toggleBtn.innerHTML = `${playSvg} Start`;
+        toggleBtn.classList.remove("primary-active");
+        toggleBtn.classList.add("primary-idle");
+        toggleBtn.disabled = false;      // ensure Start opens Settings again
+        timerDisplay.textContent = "00:00";   // ensure plain zero time
+
+        updateButtonsLayout();
       }
-      document.getElementById("left-dots").innerHTML  = "";
-      document.getElementById("right-dots").innerHTML = "";
-      toggleBtn.textContent = "Start";
-      toggleBtn.disabled = true;
-      resetBtn.disabled = true;
     });
 
     // ─────────── Config Button (opens /edit-config) ───────────
@@ -377,6 +653,81 @@
       const secs = totalSeconds % 60;
       timerDisplay.textContent = formatTime(mins, secs);
     }
+
+    // ─────────── Dot Flight Animation Helper ───────────
+    /**
+     * Animate a red dot flying up → across → down, then turning green.
+     * Uses translate transforms for buttery‑smooth motion.
+     * If viewport ≤ 600 px, the animation is skipped.
+     */
+    function animateDotFlight(redDot) {
+      // Skip animation entirely on compact layout
+      if (window.matchMedia("(max-width: 600px)").matches) {
+        redDot.classList.replace("red", "green");
+        document.getElementById("right-dots").appendChild(redDot);
+        return;
+      }
+
+      const startRect = redDot.getBoundingClientRect();
+      const rightCol  = document.getElementById("right-dots");
+      const endRect   = rightCol.getBoundingClientRect();
+
+      // Clone node for animation
+      const clone = redDot.cloneNode(false);
+      clone.style.position = "fixed";
+      clone.style.left = `${startRect.left}px`;
+      clone.style.top  = `${startRect.top}px`;
+      clone.style.width  = `${startRect.width}px`;
+      clone.style.height = `${startRect.height}px`;
+      clone.style.borderRadius = "50%";
+      clone.style.backgroundColor = "red";
+      clone.style.zIndex = 9999;
+      clone.style.willChange = "transform, background-color";
+      document.body.appendChild(clone);
+
+      // Remove original immediately
+      redDot.remove();
+
+      const upDistance    = -(startRect.top - 40); // pixel shift to reach 40 px from viewport top
+      const acrossDistance= (endRect.left + (endRect.width - startRect.width) / 2) - startRect.left;
+      const downDistance  = (endRect.bottom - startRect.height / 2) - 40;
+
+      // Helper to compose translate
+      const tr = (dx, dy) => `translate(${dx}px, ${dy}px)`;
+
+      // ── Stage 1: smooth rise (two‑frame hack ensures transition fires) ──
+      clone.style.transform = tr(0, 0);          // starting point
+      requestAnimationFrame(() => {
+        clone.style.transition = "transform 0.5s ease-out";
+        requestAnimationFrame(() => {            // second frame → actual move
+          clone.style.transform = tr(0, upDistance);
+        });
+      });
+
+      // ── Stage 2: slide across ──
+      setTimeout(() => {
+        clone.style.transition = "transform 0.8s ease-out";
+        clone.style.transform  = tr(acrossDistance, upDistance);
+      }, 550);
+
+      // ── Stage 3: colour change + drop ──
+      setTimeout(() => {
+        clone.style.transition = "transform 0.5s ease-in, background-color 0.2s linear";
+        clone.style.transform  = tr(acrossDistance, upDistance + downDistance);
+        clone.style.backgroundColor = "green";
+      }, 1400);
+
+      // ── Finish: commit real green dot ──
+      setTimeout(() => {
+        const newDot = document.createElement("div");
+        newDot.classList.add("dot", "green");
+        newDot.style.width  = clone.style.width;
+        newDot.style.height = clone.style.height;
+        rightCol.appendChild(newDot);
+        clone.remove();
+      }, 1950);
+    }
+
     async function checkForNewScans() {
       try {
         const currentSession = getCurrentSession();
@@ -385,9 +736,7 @@
         if (count > lastSeenCount) {
           const redDot = document.querySelector("#left-dots .dot.red");
           if (redDot) {
-            redDot.classList.remove("red");
-            redDot.classList.add("green");
-            document.getElementById("right-dots").appendChild(redDot);
+            animateDotFlight(redDot);
             lastSeenCount = count;
           }
         }
@@ -408,31 +757,74 @@
     }
     setInterval(checkForNewScans, 2000);
 
-    window.addEventListener("message", function (event) {
-      console.log("🟢 Received message from settings:", event.data);
-      if (event.data.type === "settings") {
-        const { minutes, teams } = event.data;
-        if (typeof minutes === "number" && !isNaN(minutes)) {
-          totalSeconds = minutes * 60;
-          if (minutes === -1) {
-            totalSeconds = 0;
-            timerDisplay.textContent = "00:00";
-            timerDisplay.style.color = "red";
-            timerDisplay.classList.add("flashing-red");
-            toggleBtn.disabled = true;
-            resetBtn.disabled = false;
-            return;
+window.addEventListener("message", function (event) {
+  console.log("🟢 Received message from settings:", event.data);
+  if (event.data.type === "settings") {
+    const { minutes, seconds, teams, green_teams, session_id } = event.data;
+    if (
+      typeof minutes === "number" && !isNaN(minutes) &&
+      typeof seconds === "number" && !isNaN(seconds)
+    ) {
+      totalSeconds = minutes * 60 + seconds;
+      if (minutes === -1) {
+        // existing negative special-case
+        totalSeconds = 0;
+        timerDisplay.textContent = "00:00";
+        timerDisplay.style.color = "red";
+        timerDisplay.classList.add("flashing-red");
+        // toggleBtn.disabled = true;
+        // resetBtn.disabled = true;
+        updateButtonsLayout();
+        return;
+      }
+      // ── If timer is zero AND no dots specified → treat as fresh/no‑config
+      const noDotsRequested =
+        (typeof teams !== "number" || teams === 0) &&
+        (typeof green_teams !== "number" || green_teams === 0);
+
+      if (totalSeconds === 0 && noDotsRequested) {
+        // Treat as fresh / no‑config
+        hasConfig = false;
+        optionsBtn.classList.add("hidden");
+        resetBtn.classList.add("hidden");
+        resetStage = 0;
+        updateButtonsLayout();
+
+        /* ── Still apply session‑id change, if provided ── */
+        if (session_id !== undefined) {
+          const session = session_id || "default";
+          const sessionIndicator = document.getElementById("session-indicator");
+          if (sessionIndicator) {
+            sessionIndicator.textContent = `Session ID: ${session}`;
           }
-          updateTimerDisplay();
-          timerDisplay.style.color      = "";
-          timerDisplay.style.fontWeight = "";
-          timerDisplay.classList.remove("flashing-red");
-          if (config && config.ui && config.ui.font_color) {
-            timerDisplay.style.color = config.ui.font_color;
+          sessionStorage.setItem("session", session);
+          updateAddressBar(session);
+
+          // Refresh embedded QR
+          const qrImg = document.querySelector(".qr-section img");
+          if (qrImg) {
+            qrImg.src = session && session !== "default"
+              ? `/qr-image?session=${encodeURIComponent(session)}`
+              : "/qr-image";
           }
-          toggleBtn.disabled = false;
-          resetBtn.disabled = false;
+
+          // Reload this session's UI config
+          if (typeof loadAndApplyConfig === "function") {
+            loadAndApplyConfig(true);
+          }
         }
+        return;   // done
+      }
+      updateTimerDisplay();
+      timerDisplay.style.color      = "";
+      timerDisplay.style.fontWeight = "";
+      timerDisplay.classList.remove("flashing-red");
+      if (config && config.ui && config.ui.font_color) {
+        timerDisplay.style.color = config.ui.font_color;
+      }
+      toggleBtn.disabled = false;
+      // resetBtn.disabled = false;
+    }
         if (typeof teams === "number" && !isNaN(teams)) {
           const leftDots  = document.getElementById("left-dots");
           const rightDots = document.getElementById("right-dots");
@@ -474,6 +866,29 @@
             }
           }
         }
+        // Store last configured values for future Reset
+        if (typeof minutes === "number" && typeof seconds === "number") {
+          lastConfigured.seconds = minutes * 60 + seconds;
+        }
+        if (typeof teams === "number") {
+          lastConfigured.red = teams;
+        }
+        if (typeof green_teams === "number") {
+          lastConfigured.green = green_teams;
+        }
+        if (event.data.dot_size) {
+          lastConfigured.dotSize = event.data.dot_size;
+        }
+        hasConfig = true;                // we now have a config
+        resetStage = 0;
+        optionsBtn.classList.remove("hidden");   // show Edit/Pencil button
+        // ── Keep Reset visible as long as countdown value > 0
+        if (totalSeconds > 0) {
+          resetBtn.classList.remove("hidden");
+        } else {
+          resetBtn.classList.add("hidden");
+        }
+        updateButtonsLayout();
         // --- Session indicator update ---
         const sessionIndicator = document.getElementById("session-indicator");
         if (sessionIndicator) {
@@ -481,6 +896,7 @@
           sessionIndicator.textContent = `Session ID: ${session}`;
           // Save selected session to sessionStorage
           sessionStorage.setItem("session", session);
+          updateAddressBar(session);
           // Dynamically update QR image source
           const qrImg = document.querySelector(".qr-section img");
           if (qrImg) qrImg.src = `/qr-image?session=${encodeURIComponent(session)}`;
@@ -534,6 +950,12 @@
       if (config.ui && config.ui.font_color) {
         timerDisplay.style.color = config.ui.font_color;
       }
+      // ─── Set pill‑button colours from config ───
+      const primary = (config.ui && config.ui.font_color)        || '#333';
+      const secondary = (config.ui && config.ui.background_color) ? primary+'99' : '#666';
+      document.documentElement.style.setProperty('--btn-primary', primary);
+      document.documentElement.style.setProperty('--btn-secondary', secondary);
+
       // Restore the timer state after applying config if preserveTimer is true
       if (preserveTimer) {
         totalSeconds = preservedTime;
@@ -569,6 +991,7 @@
         ? `/qr-image?session=${encodeURIComponent(session)}`
         : "/qr-image";
     }
+    updateButtonsLayout();   // ensure correct layout at startup
   });
 
   // You can also call loadAndApplyConfig() after each time you reload/reset the dots, etc.

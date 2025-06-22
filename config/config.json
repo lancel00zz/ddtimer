@@ -1,9 +1,9 @@
 {
   "ui": {
-    "background_color": "#b36ab4",
     "font_family": "Oswald",
-    "font_color": "#000000",
+    "font_color": "#a72f47",
     "dot_size": "S",
-    "background_image": null
+    "background_image": "timer-bg.png",
+    "background_color": null
   }
 }
