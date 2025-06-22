@@ -121,12 +121,18 @@ def edit_config():
             parsed["ui"] = {}
 
         picked_color = request.form.get("background_color", "").strip()
-        if picked_color:
-            parsed["ui"]["background_color"] = picked_color
-            parsed["ui"]["background_image"] = None
+        bg_file_obj = request.files.get("bg_file")
 
-        if "bg_file" in request.files:
-            file = request.files["bg_file"]
+        # If a new background image is uploaded, handle below; 
+        # otherwise decide whether to use picked_color.
+        if bg_file_obj is None or not bg_file_obj.filename:
+            # Only apply background_color when NO image is currently set
+            # (prevents wiping an existing background image when merely changing dot size).
+            if picked_color and not parsed["ui"].get("background_image"):
+                parsed["ui"]["background_color"] = picked_color
+
+        if bg_file_obj and bg_file_obj.filename:
+            file = bg_file_obj
             if file and file.filename:
                 filename = secure_filename(file.filename)
                 save_path = os.path.join("app", "static", filename)
