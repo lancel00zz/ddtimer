@@ -4,130 +4,491 @@
   <meta charset="UTF-8" />
   <title>Timer Settings</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
-      background-color: #f0f2f5;
-      padding: 30px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 16px;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
       gap: 12px;
-      width: 340px;
+      width: 420px;
+      color: #333;
+    }
+
+    .settings-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section-toggle {
+      width: 0;
+      height: 0;
+      border-left: 6px solid #4a5568;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .section-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #2d3748;
+      margin: 0;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-content {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .section-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .input-group {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .input-group-wide {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     label {
       font-weight: 500;
-      margin-bottom: 6px;
-      display: block;
-    }
-
-    .input-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px; /* tighter spacing below input rows */
-      width: 100%;
+      font-size: 13px;
+      color: #4a5568;
+      margin: 0;
     }
 
     input[type="number"] {
-      font-size: 1.2rem;
-      width: 60px;
+      font-size: 13px;
+      width: 50px;
       text-align: center;
-      padding: 4px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #f7fafc;
+      transition: all 0.2s;
     }
 
-    .teams-row {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 15px;
-      width: 100%;
-      justify-content: space-between;
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
-    .team-input {
+    input[type="text"] {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #f7fafc;
+      transition: all 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="color"] {
+      width: 36px;
+      height: 28px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: none;
+    }
+
+    select {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #f7fafc;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .radio-group {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
       flex: 1;
     }
 
-    .team-input span {
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
       font-weight: 500;
-      margin-bottom: 4px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .file-input-label:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .filename-display {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 4px;
+      font-style: italic;
+      grid-column: 2;
+    }
+
+    .image-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+      grid-column: 2;
+    }
+
+    .image-thumbnail {
+      width: 50px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid #e2e8f0;
+      background: #f7fafc;
+      display: none;
+    }
+
+    .image-thumbnail.visible {
       display: block;
     }
 
-    button {
-      font-size: 1rem;
-      padding: 8px 20px;
-      border: none;
-      border-radius: 6px;
-      background-color: #ddd;
-      cursor: pointer;
-      margin-right: 10px;
+    .image-info {
+      flex: 1;
+      font-size: 11px;
+      color: #718096;
     }
 
-    button:hover {
-      background-color: #ccc;
+    .remove-image {
+      background: #fed7d7;
+      color: #c53030;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .remove-image:hover {
+      background: #feb2b2;
+    }
+
+    .session-help {
+      font-size: 11px;
+      color: #718096;
+      margin: 6px 0 0 0;
+      line-height: 1.4;
+      grid-column: 1 / -1;
     }
 
     .button-row {
       display: flex;
-      gap: 20px;
-      width: 100%;
+      gap: 10px;
       justify-content: flex-end;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    .sticky-buttons {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: transparent;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 16px 0 8px 0;
+      margin-bottom: 8px;
     }
 
-    .session-help {
-      font-size: 0.75rem;
-      color: #555;
-      margin-top: 0;       /* no gap above */
-      margin-bottom: 8px;  /* slightly smaller gap below */
+    button {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button.secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+
+    button.secondary:hover {
+      background: #cbd5e0;
+    }
+
+    button.primary {
+      background: #667eea;
+      color: white;
+    }
+
+    button.primary:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .clear-btn {
+      background: #fed7d7;
+      color: #c53030;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .clear-btn:hover {
+      background: #feb2b2;
+    }
+
+    .time-inputs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .time-label {
+      font-size: 11px;
+      color: #718096;
+      margin: 0 2px;
     }
   </style>
 </head>
 <body>
-  <div class="input-row">
-    <label for="time-input" style="width: 100px;">countdown:</label>
-    <input type="number" id="time-input" min="0" style="width: 60px;" />
-    <span style="margin-right: 20px;">min</span>
-    <input type="number" id="seconds-input" min="0" max="59" style="width: 60px;" />
-    <span>secs</span>
+  <div class="button-row sticky-buttons">
+    <button class="secondary" onclick="window.close()">Cancel</button>
+    <button class="primary" onclick="applySettings()">Set</button>
   </div>
 
-  <div class="input-row">
-    <label for="red-teams" style="width: 100px;">red dots:</label>
-    <input type="number" id="red-teams" min="0" style="width: 60px;" />
+  <div class="settings-card">
+    <div class="section-header" onclick="toggleSection('timer-config')">
+      <div class="section-toggle" id="timer-config-toggle"></div>
+      <div class="section-title">Timer Configuration</div>
+    </div>
+    
+    <div class="section-content" id="timer-config-content">
+      <div class="input-group">
+        <label>Countdown:</label>
+        <div class="time-inputs">
+          <input type="number" id="time-input" min="0" placeholder="0" />
+          <span class="time-label">min</span>
+          <input type="number" id="seconds-input" min="0" max="59" placeholder="0" />
+          <span class="time-label">sec</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Red dots:</label>
+        <input type="number" id="red-teams" min="0" placeholder="0" />
+      </div>
+
+      <div class="input-group">
+        <label>Green dots:</label>
+        <input type="number" id="green-teams" min="0" placeholder="0" />
+      </div>
+
+      <div class="input-group">
+        <label>Dot size:</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="dot-size" value="S"> S</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="M"> M</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="L"> L</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="XL"> XL</label>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="input-row">
-    <label for="green-teams" style="width: 100px;">green dots:</label>
-    <input type="number" id="green-teams" min="0" style="width: 60px;" />
+  <div class="settings-card">
+    <div class="section-header" onclick="toggleSection('appearance')">
+      <div class="section-toggle collapsed" id="appearance-toggle"></div>
+      <div class="section-title">Appearance</div>
+    </div>
+
+    <div class="section-content collapsed" id="appearance-content">
+      <div class="input-group">
+        <label>Background:</label>
+        <div class="input-group-wide">
+          <input type="color" id="background-color" value="#d0f0ff" />
+          <span style="font-size: 11px; color: #718096;">or image:</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label></label>
+        <div class="file-input-wrapper">
+          <input type="file" id="background-file" accept="image/*" />
+          <label for="background-file" class="file-input-label">Choose Image</label>
+        </div>
+      </div>
+      <div id="background-filename" class="filename-display"></div>
+      <div class="image-preview" id="image-preview">
+        <img id="image-thumbnail" class="image-thumbnail" alt="Background preview" />
+        <div class="image-info" id="image-info"></div>
+        <button class="remove-image" id="remove-image" onclick="removeBackgroundImage()">Remove</button>
+      </div>
+
+      <div class="input-group">
+        <label>Font color:</label>
+        <input type="color" id="font-color" value="#000000" />
+      </div>
+
+      <div class="input-group">
+        <label>Font family:</label>
+        <select id="font-family">
+          <option value="Arial">Arial</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Verdana">Verdana</option>
+          <option value="monospace">Monospace</option>
+          <option value="Tahoma">Tahoma</option>
+          <option value="Trebuchet MS">Trebuchet MS</option>
+          <option value="Impact">Impact</option>
+          <option value="Roboto">Roboto</option>
+          <option value="Lato">Lato</option>
+          <option value="Playfair Display">Playfair Display</option>
+          <option value="Oswald">Oswald</option>
+          <option value="Source Sans Pro">Source Sans Pro</option>
+        </select>
+      </div>
+    </div>
   </div>
 
-  <div class="input-row">
-    <label for="session-id" style="width: 100px;">session ID:</label>
-    <input type="text" id="session-id" placeholder="e.g. PatrickLab1" style="flex: 1;" />
-    <button onclick="clearSessionId()">Clear</button>
-  </div>
-  <div class="session-help">
-    Keep or replace the session ID with something more memorable like patrick123, TeamGreen, Lab_jmx, ... It will become your session key for all backend calls, QR codes, dot counts, configu lookups, etc.
-  </div>
+  <div class="settings-card">
+    <div class="section-header" onclick="toggleSection('session')">
+      <div class="section-toggle collapsed" id="session-toggle"></div>
+      <div class="section-title">Session</div>
+    </div>
 
-  <div class="button-row">
-    <button onclick="window.close()">Cancel</button>
-    <button onclick="applySettings()">Set</button>
+    <div class="section-content collapsed" id="session-content">
+      <div class="input-group">
+        <label>Session ID:</label>
+        <div class="input-group-wide">
+          <input type="text" id="session-id" placeholder="e.g. PatrickLab1" />
+          <button class="clear-btn" onclick="clearSessionId()">Clear</button>
+        </div>
+      </div>
+      <div class="session-help">
+        Use a memorable session ID like "patrick123", "TeamGreen", or "Lab_jmx". This becomes your session key for all backend calls, QR codes, and dot counts.
+      </div>
+    </div>
   </div>
 
   <script>
+    let currentBackgroundImage = null;
+    let prefill = {};
+
+    function toggleSection(sectionId) {
+      const toggle = document.getElementById(`${sectionId}-toggle`);
+      const content = document.getElementById(`${sectionId}-content`);
+      
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggle.classList.remove('collapsed');
+      } else {
+        content.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+      }
+    }
+
     function applySettings() {
       const minutes = parseInt(document.getElementById("time-input").value, 10);
       const seconds = parseInt(document.getElementById("seconds-input").value, 10);
       const red = parseInt(document.getElementById("red-teams").value, 10);
       const green = parseInt(document.getElementById("green-teams").value, 10);
       const sessionId = document.getElementById("session-id").value.trim();
+      const dotSize = document.querySelector('input[name="dot-size"]:checked')?.value || "S";
+      const backgroundColor = document.getElementById("background-color").value;
+      const fontColor = document.getElementById("font-color").value;
+      const fontFamily = document.getElementById("font-family").value;
 
       if (window.opener) {
         window.opener.postMessage({
@@ -136,26 +497,85 @@
           seconds,
           teams: red,
           green_teams: green,
-          session_id: sessionId || null
+          session_id: sessionId || null,
+          dot_size: dotSize,
+          background_color: backgroundColor,
+          font_color: fontColor,
+          font_family: fontFamily,
+          background_image: currentBackgroundImage
         }, "*");
-      }
-
-      // Store edit-config-url with session if present
-      if (sessionId) {
-        const url = new URL("/edit-config", window.location.origin);
-        url.searchParams.set("session", sessionId);
-        localStorage.setItem("edit-config-url", url.toString());
-      } else {
-        localStorage.removeItem("edit-config-url");
       }
 
       window.close();
     }
 
+    // Handle background file upload
+    document.getElementById("background-file").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const thumbnail = document.getElementById("image-thumbnail");
+          thumbnail.src = e.target.result;
+          thumbnail.classList.add("visible");
+          document.getElementById("image-info").textContent = file.name;
+          document.getElementById("image-preview").style.display = "flex";
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append("bg_file", file);
+        
+        try {
+          const sessionId = getCurrentSessionId();
+          const response = await fetch(`/upload-background?session=${encodeURIComponent(sessionId)}`, {
+            method: "POST",
+            body: formData
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            currentBackgroundImage = data.filename;
+            document.getElementById("background-filename").textContent = `Uploaded: ${file.name}`;
+          } else {
+            alert("Failed to upload background image");
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
+          alert("Failed to upload background image");
+        }
+      }
+    });
+
+    // Handle background color change - hide image preview when color is selected
+    document.getElementById("background-color").addEventListener("change", function() {
+      // Hide image preview when background color is selected
+      document.getElementById("image-thumbnail").classList.remove("visible");
+      document.getElementById("image-preview").style.display = "none";
+      currentBackgroundImage = null;
+      document.getElementById("background-filename").textContent = "";
+    });
+
+    function removeBackgroundImage() {
+      currentBackgroundImage = null;
+      document.getElementById("image-thumbnail").classList.remove("visible");
+      document.getElementById("image-preview").style.display = "none";
+      document.getElementById("background-filename").textContent = "";
+      document.getElementById("background-file").value = "";
+    }
+
+    function getCurrentSessionId() {
+      if (window.opener && window.opener.getCurrentSession) {
+        return window.opener.getCurrentSession();
+      }
+      return "default";
+    }
+
     // Allow Enter/Return to trigger the Set action
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        e.preventDefault();   // avoid submitting any implicit forms
+        e.preventDefault();
         applySettings();
       }
     });
@@ -173,32 +593,123 @@
           const sessionField = document.getElementById("session-id");
           if (sessionField) {
             sessionField.value = event.data.prefill_session_id;
+            prefill.session_id = true;
           }
+        }
+        // Prefill timer and other fields if provided
+        if (event.data.prefill_minutes !== undefined) {
+          document.getElementById("time-input").value = event.data.prefill_minutes;
+          prefill.minutes = true;
+        }
+        if (event.data.prefill_seconds !== undefined) {
+          document.getElementById("seconds-input").value = event.data.prefill_seconds;
+          prefill.seconds = true;
+        }
+        if (event.data.prefill_teams !== undefined) {
+          document.getElementById("red-teams").value = event.data.prefill_teams;
+          prefill.teams = true;
+        }
+        if (event.data.prefill_green_teams !== undefined) {
+          document.getElementById("green-teams").value = event.data.prefill_green_teams;
+          prefill.green_teams = true;
+        }
+        if (event.data.prefill_dot_size) {
+          const dotInput = document.querySelector(`input[name='dot-size'][value='${event.data.prefill_dot_size}']`);
+          if (dotInput) dotInput.checked = true;
+          prefill.dot_size = true;
+        }
+        if (event.data.prefill_background_color) {
+          document.getElementById("background-color").value = event.data.prefill_background_color;
+          prefill.background_color = true;
+        }
+        if (event.data.prefill_font_color) {
+          document.getElementById("font-color").value = event.data.prefill_font_color;
+          prefill.font_color = true;
+        }
+        if (event.data.prefill_font_family) {
+          document.getElementById("font-family").value = event.data.prefill_font_family;
+          prefill.font_family = true;
+        }
+        if (event.data.prefill_background_image) {
+          currentBackgroundImage = event.data.prefill_background_image;
+          document.getElementById("background-filename").textContent = `Current: ${event.data.prefill_background_image}`;
+          // Show thumbnail for existing background image
+          const thumbnail = document.getElementById("image-thumbnail");
+          thumbnail.src = `/static/${event.data.prefill_background_image}`;
+          thumbnail.classList.add("visible");
+          document.getElementById("image-info").textContent = event.data.prefill_background_image;
+          document.getElementById("image-preview").style.display = "flex";
+          prefill.background_image = true;
         }
       }
     });
 
-    window.addEventListener("DOMContentLoaded", () => {
+    window.addEventListener("DOMContentLoaded", async () => {
       if (!window.opener) return;
+      
+      let sessionId = "default";
       try {
-        const timerText = window.opener.document.getElementById("timer-display")?.textContent;
-        const leftDots = window.opener.document.querySelectorAll("#left-dots .dot.red").length;
-        const rightDots = window.opener.document.querySelectorAll("#right-dots .dot.green").length;
-
-        if (timerText) {
-          const [minStr, secStr] = timerText.split(":");
-          const minutes = parseInt(minStr, 10);
-          // Prefill logic for minutes and seconds
-          if (!isNaN(minutes)) {
-            document.getElementById("time-input").value = Math.floor(minutes);
-            document.getElementById("seconds-input").value = 0;
+        // Try to get session from opener
+        if (window.opener.getCurrentSession) {
+          sessionId = window.opener.getCurrentSession();
+        } else {
+          const sessionIndicator = window.opener.document.getElementById("session-indicator");
+          if (sessionIndicator) {
+            const text = sessionIndicator.textContent;
+            if (text.startsWith("Session ID: ")) {
+              sessionId = text.replace("Session ID: ", "");
+            }
           }
         }
-
-        document.getElementById("red-teams").value = leftDots;
-        document.getElementById("green-teams").value = rightDots;
+        
+        // Fetch session state
+        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(sessionId)}`);
+        if (resp.ok) {
+          const state = await resp.json();
+          
+          // Prefill all fields from session state
+          if (state.minutes !== undefined && !prefill.minutes) {
+            document.getElementById("time-input").value = state.minutes;
+          }
+          if (state.seconds !== undefined && !prefill.seconds) {
+            document.getElementById("seconds-input").value = state.seconds;
+          }
+          if (state.teams !== undefined && !prefill.teams) {
+            document.getElementById("red-teams").value = state.teams;
+          }
+          if (state.green_teams !== undefined && !prefill.green_teams) {
+            document.getElementById("green-teams").value = state.green_teams;
+          }
+          if (state.dot_size && !prefill.dot_size) {
+            const dotInput = document.querySelector(`input[name='dot-size'][value='${state.dot_size}']`);
+            if (dotInput) dotInput.checked = true;
+          }
+          if (state.background_color && !prefill.background_color) {
+            document.getElementById("background-color").value = state.background_color;
+          }
+          if (state.font_color && !prefill.font_color) {
+            document.getElementById("font-color").value = state.font_color;
+          }
+          if (state.font_family && !prefill.font_family) {
+            document.getElementById("font-family").value = state.font_family;
+          }
+          if (state.background_image && !prefill.background_image) {
+            currentBackgroundImage = state.background_image;
+            document.getElementById("background-filename").textContent = `Current: ${state.background_image}`;
+            // Show thumbnail for existing background image
+            const thumbnail = document.getElementById("image-thumbnail");
+            thumbnail.src = `/static/${state.background_image}`;
+            thumbnail.classList.add("visible");
+            document.getElementById("image-info").textContent = state.background_image;
+            document.getElementById("image-preview").style.display = "flex";
+          }
+        }
+        
+        // Set session ID
+        document.getElementById("session-id").value = sessionId;
+        
       } catch (err) {
-        console.warn("Failed to populate settings from opener:", err);
+        console.warn("Failed to populate settings from session state:", err);
       }
     });
   </script>
