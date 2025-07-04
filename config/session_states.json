@@ -27,16 +27,16 @@
   "default": {
     "minutes": 0,
     "seconds": 0,
-    "teams": 2,
+    "teams": 0,
     "green_teams": 0,
     "dot_size": "M",
     "background_color": "#d0f0ff",
-    "font_color": "#dd4b4b",
-    "font_family": "Lato",
-    "background_image": "U79VI8_cannes_new_1751647662.png",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "BH7K8K_cannes_new_1751654344.png",
     "custom_font_color_set": true,
-    "session_id": "default",
-    "type": "settings"
+    "type": "settings",
+    "session_id": "default"
   },
   "2UX358": {
     "minutes": 3,
@@ -103,5 +103,19 @@
     "custom_font_color_set": true,
     "session_id": "default",
     "type": "settings"
+  },
+  "BH7K8K": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 0,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "BH7K8K_cannes_new_1751654344.png",
+    "custom_font_color_set": true,
+    "type": "settings",
+    "session_id": "BH7K8K"
   }
 }

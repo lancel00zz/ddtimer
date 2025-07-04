@@ -11,7 +11,7 @@
 services:
   facilitator:
     platform: linux/amd64
-    image: lancel00zz/facilitator-timer-app:4.0
+    image: lancel00zz/facilitator-timer-app:4.21
     ports:
       - "5056:5000"
     volumes:

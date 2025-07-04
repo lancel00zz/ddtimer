@@ -8,7 +8,8 @@
 services:
   facilitator:
     platform: linux/amd64
-    image: lancel00zz/facilitator-timer-app:latest
+    image: lancel00zz/facilitator-timer-app:4.2
+    pull_policy: always
     ports:
       - "5050:5050"
     restart: unless-stopped
