@@ -5,9 +5,13 @@
   <title>Facilitator Timer</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Lato&family=Playfair+Display&family=Oswald&family=Source+Sans+Pro&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Courier New', monospace;
-      background-color: #d0f0ff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       height: 100vh;
       margin: 0;
       padding: 0;
@@ -15,6 +19,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
+      color: #333;
+      overflow: hidden;
     }
 
     .container {
@@ -22,6 +28,7 @@
       width: 100%;
       height: 100%;
       position: relative;
+      backdrop-filter: blur(10px);
     }
 
     .dot-column {
@@ -29,6 +36,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      z-index: 10;
     }
 
     .left-dots {
@@ -44,17 +52,26 @@
     }
 
     .dot {
+      border-radius: 50%;
       width: 16px;
       height: 16px;
-      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    .dot:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
     }
 
     .red {
-      background-color: red;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+      border: 2px solid rgba(255, 255, 255, 0.3);
     }
 
     .green {
-      background-color: green;
+      background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+      border: 2px solid rgba(255, 255, 255, 0.3);
     }
 
     .center {
@@ -63,120 +80,154 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 24px;
       padding-top: 40px;
+      z-index: 5;
     }
 
     .timer-display {
       font-size: clamp(2rem, 30vw, 30rem);
       margin: 0;
       line-height: 1;
+      font-weight: 700;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
-    .buttons{
+    .timer-display.gradient-text {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .buttons {
       display: grid;
-      grid-template-columns: 60px auto 60px;  /* Set | Start/Stop | Reset */
-      justify-content: center;                /* centre the middle column under timer */
+      grid-template-columns: 60px auto 60px;
+      justify-content: center;
       align-items: center;
       gap: 20px;
       margin-top: 20px;
       width: 100%;
+      max-width: 400px;
     }
-    /* when only the Start/Stop pill is visible, collapse to a single column */
-    .buttons.single{
+
+    .buttons.single {
       grid-template-columns: auto;
     }
 
-    button {
-      font-size: 1.2rem;
-      padding: 10px 20px;
+    :root {
+      --btn-primary: #333;
+      --btn-secondary: #666;
+    }
+
+    #config-button.icon-only {
       border: none;
-      border-radius: 8px;
-      background-color: #e0e0e0;
+      background: none;
+      padding: 0;
+      width: auto;
+      height: auto;
+      color: var(--btn-primary);
+    }
+
+    #config-button.icon-only svg {
+      width: 2em;
+      height: 2em;
+    }
+
+    .buttons button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 50px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
       cursor: pointer;
-    }
-    /* ─── Pill‑button look & feel ─────────────────────────────── */
-:root{
-  --btn-primary:#333;   /* will be overwritten by JS loader   */
-  --btn-secondary:#666; /* ditto                             */
-}
-
-    /* Icon-only style for the bottom-left Tools button */
-#config-button.icon-only{
-  border: none;
-  background: none;
-  padding: 0;
-  width: auto;
-  height: auto;
-  color: var(--btn-primary);   /* match primary font colour */
-}
-/* Bigger cog icon (2×) */
-#config-button.icon-only svg{
-  width:2em;
-  height:2em;
-}
-
-.buttons button{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  font-family:inherit;
-  font-size:1.25rem;        /* was 1rem → bigger */
-  font-weight:600;          /* bolder text */
-  padding:10px 22px;
-  border-radius:9999px;
-  border:2px solid currentColor;
-  background:none;
-  cursor:pointer;
-  transition:background .15s,color .15s;
-}
-.buttons button.primary-idle   {color:var(--btn-primary);}
-.buttons button.primary-active{
-  background:var(--btn-primary);
-  color:#fff;
-}
-.buttons button.secondary      {color:var(--btn-secondary);}
-/* small glyph size (linked to button font) */
-.buttons .icon,
-.buttons svg{
-  width:1.35em;     /* 35 % larger than before */
-  height:1.35em;
-  line-height:1;
-}
-    /* perfectly‑round buttons */
-    .buttons button.round{
-      width:60px;
-      height:60px;
-      padding:0;
-      justify-content:center;  /* centres Set text or icon */
-      border-radius:50%;
-      flex-shrink:0;           /* keep them circular in flex layout */
-      /* keep circle size but make label/icon scale with overall font */
-      font-size:1.25rem;
-      font-weight:600;
-    }
-    .buttons button.round .icon{
-      margin:0;                /* no horizontal gap needed */
+      transition: all 0.3s ease;
+      color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
 
-    /* ── Global round‑button helper (for config button outside .buttons grid) ── */
-    .round{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:60px;
-      height:60px;
-      padding:0;
-      border-radius:50%;
-      border:2px solid currentColor;
-      font-size:1.25rem;
-      font-weight:600;
-      background:none;
-      cursor:pointer;
+    .buttons button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
-    .round svg{
-      width:1.35em;
-      height:1.35em;
+
+    .buttons button.primary-idle {
+      background: rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .buttons button.primary-active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .buttons button.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .buttons .icon,
+    .buttons svg {
+      width: 1.2em;
+      height: 1.2em;
+      line-height: 1;
+    }
+
+    .buttons button.round {
+      width: 60px;
+      height: 60px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .buttons button.round .icon {
+      margin: 0;
+    }
+
+    .round {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      padding: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      font-size: 1.1rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .round:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .round svg {
+      width: 1.2em;
+      height: 1.2em;
     }
 
     .qr-section {
@@ -184,41 +235,72 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
     .qr-section img {
       width: 140px;
       height: 140px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
     }
 
-    .qr-label{
-      font-size:0.85rem;
-      color:var(--btn-secondary);  /* softer tint based on primary font */
-      opacity:0.6;                /* less visual weight */
+    .qr-section img:hover {
+      transform: scale(1.05);
+    }
+
+    .qr-label {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    #session-indicator {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: underline;
+      cursor: pointer;
+      transition: color 0.3s ease;
+      font-weight: 500;
+    }
+
+    #session-indicator:hover {
+      color: white;
     }
 
     @keyframes flash {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
+      0%, 100% { 
+        opacity: 1;
+        text-shadow: 0 4px 20px rgba(255, 0, 0, 0.3);
+      }
+      50% { 
+        opacity: 0.8;
+        text-shadow: 0 4px 20px rgba(255, 0, 0, 0.6);
+      }
     }
 
     .flashing-red {
-      color: red;
-      text-shadow: 0 0 8px white, 0 0 12px white;
+      color: #ff6b6b !important;
+      text-shadow: 0 4px 20px rgba(255, 107, 107, 0.5);
       animation: flash 1s infinite;
     }
 
-    /* Responsive layout for 3 stages */
-    /* ── Reusable helper: .hidden { display:none !important; } ── */
-    .hidden{
-      display:none !important;
+    .hidden {
+      display: none !important;
     }
 
-    @media (min-width: 651px){
-      #config-button{
+    @media (min-width: 651px) {
+      #config-button {
         position: fixed;
-        left: 80px;      /* was 20px; keeps clear of left‑dot column */
+        left: 80px;
         bottom: 20px;
         margin: 0;
       }
@@ -320,7 +402,7 @@
       <!-- Tools (config) button pinned bottom‑left via CSS -->
       <button id="config-button"
               class="secondary icon-only"
-              title="View Config">
+              title="Admin: Edit JSON Config">
         <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round"
@@ -337,12 +419,12 @@
         <div style="font-size: 0.85rem; display: flex; gap: 12px; align-items: center;">
           <span id="session-indicator"
                 onclick="openSettings()"
-                style="text-decoration: underline; cursor: pointer; color: var(--btn-primary);">
+                style="text-decoration: underline; cursor: pointer;">
             No session ID currently defined
           </span>
         </div>
 
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.1</div>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.2</div>
       </div>
     </div>
 
@@ -357,56 +439,37 @@
         sessionStorage.setItem("session", urlSess);
       }
     })();
-    let lastKnownBackgroundImage = null;
 
-    let totalSeconds = 0;
-    let intervalId    = null;
-    let lastSeenCount = 0;
-    let config = null;
-
-    const optionsBtn   = document.getElementById("options-button");
-    const toggleBtn    = document.getElementById("toggle-button");
-    const resetBtn     = document.getElementById("reset-button");
-    const configBtn    = document.getElementById("config-button");
-    const timerDisplay = document.getElementById("timer-display");
-    const buttonsContainer = document.querySelector(".buttons");
-    function updateButtonsLayout() {
-      const onlyMiddle = optionsBtn.classList.contains("hidden") &&
-                         resetBtn.classList.contains("hidden");
-      buttonsContainer.classList.toggle("single", onlyMiddle);
-    }
-
-    // Inline SVG markup for play/stop (Tabler Icons, MIT)
-    const playSvg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
-           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round"
-           class="icon icon-tabler icon-tabler-player-play">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M7 4v16l13 -8z" />
-      </svg>`;
-    const stopSvg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
-           viewBox="0 0 24 24" fill="currentColor"
-           class="icon icon-stop-square">
-        <path fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z"/>
-      </svg>`;
-
-    // ─────────── Workflow flags ───────────
-    let hasConfig = false;  // becomes true after the user saves settings once
-    let resetStage  = 0;   // 0 → first click will restore; 1 → next click will zero & hide
-    const lastConfigured = {
+    // ─── Single source of truth: current session state ───
+    let sessionState = {
+      minutes: 0,
       seconds: 0,
-      red: 0,
-      green: 0,
-      dotSize: "S"
+      teams: 0,
+      green_teams: 0,
+      dot_size: "S",
+      background_color: "#d0f0ff",
+      font_color: "#000000",
+      font_family: "Courier New",
+      background_image: null,
+      custom_font_color_set: false
     };
 
-    // ─────────── Session Helper ───────────
+    // ─── UI state ───
+    let totalSeconds = 0;
+    let intervalId = null;
+    let lastSeenCount = 0;
+    let wasTimerRunning = false; // Track if timer was running when reset was clicked
+
+    // ─── DOM elements ───
+    const optionsBtn = document.getElementById("options-button");
+    const toggleBtn = document.getElementById("toggle-button");
+    const resetBtn = document.getElementById("reset-button");
+    const configBtn = document.getElementById("config-button");
+    const timerDisplay = document.getElementById("timer-display");
+    const buttonsContainer = document.querySelector(".buttons");
+
+    // ─── Helper functions ───
     function getCurrentSession() {
-      // Prefer sessionStorage if available for session persistence
       const stored = sessionStorage.getItem("session");
       if (stored && stored !== "default") {
         return stored;
@@ -418,32 +481,216 @@
       return "default";
     }
 
-    // Keep address bar in sync with current session
     function updateAddressBar(session) {
       const url = new URL(window.location);
       url.searchParams.set("session", session);
       window.history.replaceState(null, "", url);
     }
 
-    // Restore session from sessionStorage on reload
-    window.addEventListener("DOMContentLoaded", () => {
-      const sessionIndicator = document.getElementById("session-indicator");
-      const stored = sessionStorage.getItem("session") || "default";
-      sessionIndicator.textContent = `Session ID: ${stored}`;
-      updateAddressBar(stored);
+    function updateButtonsLayout() {
+      const onlyMiddle = optionsBtn.classList.contains("hidden") && resetBtn.classList.contains("hidden");
+      buttonsContainer.classList.toggle("single", onlyMiddle);
+    }
+
+    function formatTime(mins, secs) {
+      const m = String(mins).padStart(2, '0');
+      const s = String(secs).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      timerDisplay.textContent = formatTime(mins, secs);
+    }
+
+    // ─── Core functions ───
+    function createDots(count, color, size) {
+      console.log(`🎯 Creating ${count} ${color} dots with size: ${size}`);
+      
+      const container = color === "red" ? document.getElementById("left-dots") : document.getElementById("right-dots");
+      container.innerHTML = "";
+      
+      const numCount = parseInt(count, 10) || 0;
+      if (numCount <= 0) return;
+
+      const dotSizeMap = { S: 1.0, M: 1.5, L: 1.875, XL: 2.5 };
+      const scale = dotSizeMap[size] || 1.0;
+      const px = `${Math.round(16 * scale)}px`;
+      
+      console.log(`🎯 Dot size map: ${size} → ${scale} → ${px}`);
+
+      for (let i = 0; i < numCount; i++) {
+        const dot = document.createElement("div");
+        dot.classList.add("dot", color);
+        dot.style.setProperty("width", px, "important");
+        dot.style.setProperty("height", px, "important");
+        container.appendChild(dot);
+        
+        // Debug: Check if the size was actually applied
+        setTimeout(() => {
+          const computedStyle = window.getComputedStyle(dot);
+          console.log(`🎯 Dot ${i} computed size: ${computedStyle.width} x ${computedStyle.height}`);
+        }, 100);
+      }
+      
+      console.log(`🎯 Created ${numCount} ${color} dots with size ${px}`);
+    }
+
+    function applyAppearance() {
+      // Background
+      if (sessionState.background_image) {
+        document.body.style.backgroundImage = `url("/static/${sessionState.background_image}")`;
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundRepeat = "no-repeat";
+        document.body.style.backgroundPosition = "center";
+        document.body.style.backgroundColor = "";
+      } else {
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = sessionState.background_color;
+      }
+
+      // Font
+      document.body.style.fontFamily = `"${sessionState.font_family}", sans-serif`;
+      
+      // Timer display color - apply gradient only for default state, solid color for custom colors
+      if (sessionState.font_color === "#000000" && !sessionState.custom_font_color_set) {
+        // For default black, use the gradient effect
+        timerDisplay.classList.add("gradient-text");
+        timerDisplay.style.color = "";
+      } else {
+        // For any custom color (including black), use the solid color
+        timerDisplay.classList.remove("gradient-text");
+        timerDisplay.style.color = sessionState.font_color;
+      }
+      
+      // Button colors
+      document.documentElement.style.setProperty('--btn-primary', sessionState.font_color);
+      document.documentElement.style.setProperty('--btn-secondary', sessionState.font_color + '99');
+    }
+
+    function applyTimer() {
+      const minutes = parseInt(sessionState.minutes, 10) || 0;
+      const seconds = parseInt(sessionState.seconds, 10) || 0;
+      totalSeconds = minutes * 60 + seconds;
+      updateTimerDisplay();
+      
+      // Update UI state
+      if (totalSeconds > 0 || sessionState.teams > 0 || sessionState.green_teams > 0) {
+        optionsBtn.classList.remove("hidden");
+        resetBtn.classList.remove("hidden"); // Show reset when there's content
+      } else {
+        optionsBtn.classList.add("hidden");
+        resetBtn.classList.add("hidden");
+      }
+      updateButtonsLayout();
+    }
+
+    function applySettings(data) {
+      console.log("🔧 Applying settings:", data);
+      
+      // Convert string values to numbers and update session state
+      const processedData = {
+        ...data,
+        minutes: parseInt(data.minutes, 10) || 0,
+        seconds: parseInt(data.seconds, 10) || 0,
+        teams: parseInt(data.teams, 10) || 0,
+        green_teams: parseInt(data.green_teams, 10) || 0,
+        dot_size: data.dot_size || "S",  // Ensure dot_size is preserved
+        custom_font_color_set: true  // Mark that a custom font color has been set
+      };
+      
+      console.log("🔧 Processed data:", processedData);
+      Object.assign(sessionState, processedData);
+      console.log("🔧 Session state after update:", sessionState);
+      
+      // Apply changes
+      applyAppearance();
+      applyTimer();
+      createDots(sessionState.teams, "red", sessionState.dot_size);
+      createDots(sessionState.green_teams, "green", sessionState.dot_size);
+      
+      // Update session indicator
+      if (data.session_id) {
+        const sessionIndicator = document.getElementById("session-indicator");
+        sessionIndicator.textContent = `Session ID: ${data.session_id}`;
+        sessionStorage.setItem("session", data.session_id);
+        updateAddressBar(data.session_id);
+        
+        const qrImg = document.querySelector(".qr-section img");
+        if (qrImg) qrImg.src = `/qr-image?session=${encodeURIComponent(data.session_id)}`;
+      }
+      
+      // Reset scan count and reset stage
+      lastSeenCount = 0;
+      resetStage = 0; // Reset stage when new settings are applied
+      console.log("🔧 Settings applied - Reset stage set to 0");
+      const currentSession = getCurrentSession();
+      fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
+    }
+
+    async function saveSessionState() {
+      try {
+        const session = getCurrentSession();
+        await fetch(`/api/session-state?session=${encodeURIComponent(session)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sessionState)
+        });
+      } catch (err) {
+        console.warn("Failed to save session state:", err);
+      }
+    }
+
+    async function loadSessionState() {
+      try {
+        const session = getCurrentSession();
+        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(session)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && Object.keys(data).length > 0) {
+            Object.assign(sessionState, data);
+            applyAppearance();
+            applyTimer();
+            createDots(sessionState.teams, "red", sessionState.dot_size);
+            createDots(sessionState.green_teams, "green", sessionState.dot_size);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load session state:", err);
+      }
+    }
+
+    // ─── Event handlers ───
+    window.addEventListener("message", async function (event) {
+      if (event.data.type === "settings") {
+        console.log("🟢 Received settings:", event.data);
+        console.log("🟢 Dot size received:", event.data.dot_size);
+        console.log("🟢 All fields:", {
+          minutes: event.data.minutes,
+          seconds: event.data.seconds,
+          teams: event.data.teams,
+          green_teams: event.data.green_teams,
+          dot_size: event.data.dot_size,
+          session_id: event.data.session_id
+        });
+        
+        applySettings(event.data);
+        await saveSessionState();
+        console.log("✔️ Settings applied and saved");
+      }
     });
 
-    // ─────────── Button Handlers ───────────
+    // ─── Button handlers ───
     optionsBtn.onclick = openSettings;
 
-toggleBtn.addEventListener("click", () => {
-  // If timer is at 0 OR no config yet → open Settings dialog
-  if (totalSeconds === 0 || !hasConfig) {
-    openSettings();
-    return;
-  }
+    toggleBtn.addEventListener("click", () => {
+      if (totalSeconds === 0 && sessionState.teams === 0 && sessionState.green_teams === 0) {
+        openSettings();
+        return;
+      }
 
-  if (!intervalId && totalSeconds > 0) {
+      if (!intervalId && totalSeconds > 0) {
         // Start timer
         intervalId = setInterval(() => {
           totalSeconds--;
@@ -451,233 +698,179 @@ toggleBtn.addEventListener("click", () => {
           if (totalSeconds <= 0) {
             clearInterval(intervalId);
             intervalId = null;
-            toggleBtn.innerHTML = `${playSvg} Start`;
+            toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
             toggleBtn.classList.remove("primary-active");
             toggleBtn.classList.add("primary-idle");
             toggleBtn.disabled = true;
             timerDisplay.textContent = "00:00";
+            timerDisplay.classList.remove("gradient-text");
             timerDisplay.style.color = "red";
             timerDisplay.classList.add("flashing-red");
           }
         }, 1000);
-        toggleBtn.innerHTML = `${stopSvg} Stop`;
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z"/></svg> Stop`;
         toggleBtn.classList.remove("primary-idle");
         toggleBtn.classList.add("primary-active");
         resetBtn.classList.remove("hidden");
-        resetStage = 0;
         updateButtonsLayout();
       } else {
         // Pause timer
         clearInterval(intervalId);
         intervalId = null;
-        toggleBtn.innerHTML = `${playSvg} Start`;
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
         toggleBtn.classList.remove("primary-active");
         toggleBtn.classList.add("primary-idle");
       }
     });
 
     resetBtn.addEventListener("click", () => {
-      if (resetStage === 0) {
-        /* ── FIRST CLICK: restore to last configured values ───────────── */
-        clearInterval(intervalId);
-        intervalId = null;
-        lastSeenCount = 0;                // avoid false “🏁” state on next ping
+      wasTimerRunning = intervalId !== null;
+      clearInterval(intervalId);
+      intervalId = null;
+      lastSeenCount = 0;
 
-        totalSeconds = lastConfigured.seconds;
+      // Determine if timer is stopped and at the last set value
+      const setSeconds = (parseInt(sessionState.minutes, 10) || 0) * 60 + (parseInt(sessionState.seconds, 10) || 0);
+      const isStopped = intervalId === null;
+      const isAtSetValue = totalSeconds === setSeconds;
+
+      if (isStopped && isAtSetValue) {
+        // Full reset to zero
+        totalSeconds = 0;
+        sessionState.teams = 0;
+        sessionState.green_teams = 0;
+        sessionState.minutes = 0;
+        sessionState.seconds = 0;
         updateTimerDisplay();
-        timerDisplay.style.color      = config?.ui?.font_color || "";
-        timerDisplay.style.fontWeight = "";
-        timerDisplay.classList.remove("flashing-red");
-
-        // Regenerate dots
-        document.getElementById("left-dots").innerHTML  = "";
-        document.getElementById("right-dots").innerHTML = "";
-        const currentSession = getCurrentSession();
-        fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
-
-        const dotSizeMap = { S:1.0, M:1.15, L:1.3, XL:1.5 };
-        const scale = dotSizeMap[lastConfigured.dotSize] || 1.0;
-        const px = `${Math.round(16 * scale)}px`;
-
-        for (let i = 0; i < lastConfigured.red; i++) {
-          const dot = document.createElement("div");
-          dot.classList.add("dot", "red");
-          dot.style.width = px;
-          dot.style.height = px;
-          document.getElementById("left-dots").appendChild(dot);
-        }
-        for (let i = 0; i < lastConfigured.green; i++) {
-          const dot = document.createElement("div");
-          dot.classList.add("dot", "green");
-          dot.style.width = px;
-          dot.style.height = px;
-          document.getElementById("right-dots").appendChild(dot);
-        }
-
-        toggleBtn.innerHTML = `${playSvg} Start`;
+        createDots(0, "red", sessionState.dot_size);
+        createDots(0, "green", sessionState.dot_size);
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
         toggleBtn.classList.remove("primary-active");
         toggleBtn.classList.add("primary-idle");
-        toggleBtn.disabled = false;      // allow starting again
-
-        // Stay visible; prepare for stage‑2 reset
-        resetStage = 1;
+        toggleBtn.disabled = false;
+        applyAppearance();
+        timerDisplay.classList.remove("flashing-red");
+        optionsBtn.classList.add("hidden");
+        resetBtn.classList.add("hidden");
         updateButtonsLayout();
       } else {
-        /* ── SECOND CLICK: full reset to zero, hide Reset ─────────────── */
-        clearInterval(intervalId);
-        intervalId = null;
-        lastSeenCount = 0;                // fully clear scan state
-
-        totalSeconds = 0;
+        // Restore to last set value
+        totalSeconds = setSeconds;
         updateTimerDisplay();
-        timerDisplay.style.color      = config?.ui?.font_color || "";
-        timerDisplay.style.fontWeight = "";
-        timerDisplay.classList.remove("flashing-red");
-
-        // Clear dots & backend
-        document.getElementById("left-dots").innerHTML  = "";
-        document.getElementById("right-dots").innerHTML = "";
-        const currentSession = getCurrentSession();
-        fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
-
-        // Hide Reset, hide Set, force new config next time
-        resetBtn.classList.add("hidden");
-        optionsBtn.classList.add("hidden");
-        hasConfig  = false;
-        resetStage = 0;
-
-        toggleBtn.innerHTML = `${playSvg} Start`;
+        createDots(sessionState.teams, "red", sessionState.dot_size);
+        createDots(0, "green", sessionState.dot_size);
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
         toggleBtn.classList.remove("primary-active");
         toggleBtn.classList.add("primary-idle");
-        toggleBtn.disabled = false;      // ensure Start opens Settings again
-        timerDisplay.textContent = "00:00";   // ensure plain zero time
-
+        toggleBtn.disabled = false;
+        applyAppearance();
+        timerDisplay.classList.remove("flashing-red");
+        // Keep buttons visible
+        optionsBtn.classList.remove("hidden");
+        resetBtn.classList.remove("hidden");
         updateButtonsLayout();
       }
+
+      const currentSession = getCurrentSession();
+      fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
     });
 
-    // ─────────── Config Button (opens /edit-config) ───────────
-    function openConfig() {
-      const width  = 600;
+    configBtn.addEventListener("click", () => {
+      const width = 600;
       const height = 600;
-      // Position popup 25% from left, vertically centered
       const left = window.screenX + (window.outerWidth - width) * 0.25;
-      const top  = window.screenY + (window.outerHeight - height) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
       const currentSession = getCurrentSession();
       let url = "/edit-config";
       if (currentSession !== "default") {
         url += "?session=" + encodeURIComponent(currentSession);
       }
-      window.open(
-        url,
-        "_blank",
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes`
-      );
-    }
-    configBtn.addEventListener("click", () => {
-      window.addEventListener("focus", () => {
-        loadAndApplyConfig(true);
-      }, { once: true });
-      openConfig();
+      window.open(url, "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
     });
 
-    // ─────────── Settings & QR Listeners ───────────
+    // ─── Settings & QR functions ───
     function openSettings() {
-      // Ensure unique session: generate if missing or default
       let sess = sessionStorage.getItem("session");
       if (!sess || sess === "default") {
         const newId = Math.random().toString(36).substr(2, 6).toUpperCase();
         sessionStorage.setItem("session", newId);
       }
+      
       const btnRect = optionsBtn.getBoundingClientRect();
       const width = 500;
       const height = 400;
-
       const left = window.screenX + btnRect.left;
       const top = window.screenY + btnRect.bottom + 10;
 
       const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
-
-      // Use getCurrentSession for session_id
       const currentSession = getCurrentSession();
 
-      // Once the window is ready, send it a message to position itself and prefill session_id
+      // Always send the current timer value (totalSeconds)
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+
       settingsWindow.addEventListener("load", () => {
-        settingsWindow.postMessage(
-          {
-            type: "position-settings-window",
-            left,
-            top,
-            prefill_session_id: currentSession
-          },
-          "*"
-        );
+        settingsWindow.postMessage({
+          type: "position-settings-window",
+          left,
+          top,
+          prefill_session_id: currentSession,
+          prefill_minutes: minutes,
+          prefill_seconds: seconds,
+          prefill_teams: sessionState.teams,
+          prefill_green_teams: sessionState.green_teams,
+          prefill_dot_size: sessionState.dot_size,
+          prefill_background_color: sessionState.background_color,
+          prefill_font_color: sessionState.font_color,
+          prefill_font_family: sessionState.font_family,
+          prefill_background_image: sessionState.background_image
+        }, "*");
       });
     }
+
     function openQrPopup() {
       const qrImg = document.querySelector(".qr-section img");
       const rect = qrImg.getBoundingClientRect();
       const width = 500;
       const height = 600;
-
       const left = window.screenX + rect.left;
       const top = window.screenY + rect.bottom + 10;
 
       const qrWindow = window.open("/qr-popup", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
-
-      // Use getCurrentSession for session_id
       const currentSession = getCurrentSession();
 
-      // Once the window is ready, send it a message to position itself and pass session_id
       qrWindow.addEventListener("load", () => {
-        qrWindow.postMessage(
-          {
-            type: "position-qr-window",
-            left,
-            top,
-            session_id: currentSession
-          },
-          "*"
-        );
+        qrWindow.postMessage({
+          type: "position-qr-window",
+          left,
+          top,
+          session_id: currentSession
+        }, "*");
       });
     }
 
-    // ─────────── Timer Helpers ───────────
-    function formatTime(mins, secs) {
-      const m = String(mins).padStart(2, '0');
-      const s = String(secs).padStart(2, '0');
-      return `${m}:${s}`;
-    }
-    function updateTimerDisplay() {
-      const mins = Math.floor(totalSeconds / 60);
-      const secs = totalSeconds % 60;
-      timerDisplay.textContent = formatTime(mins, secs);
-    }
-
-    // ─────────── Dot Flight Animation Helper ───────────
-    /**
-     * Animate a red dot flying up → across → down, then turning green.
-     * Uses translate transforms for buttery‑smooth motion.
-     * If viewport ≤ 600 px, the animation is skipped.
-     */
+    // ─── Dot flight animation ───
     function animateDotFlight(redDot) {
-      // Skip animation entirely on compact layout
       if (window.matchMedia("(max-width: 600px)").matches) {
         redDot.classList.replace("red", "green");
+        // Preserve the dot size when moving to mobile
+        const currentWidth = redDot.style.width || "16px";
+        const currentHeight = redDot.style.height || "16px";
+        redDot.style.setProperty("width", currentWidth, "important");
+        redDot.style.setProperty("height", currentHeight, "important");
         document.getElementById("right-dots").appendChild(redDot);
         return;
       }
 
       const startRect = redDot.getBoundingClientRect();
-      const rightCol  = document.getElementById("right-dots");
-      const endRect   = rightCol.getBoundingClientRect();
+      const rightCol = document.getElementById("right-dots");
+      const endRect = rightCol.getBoundingClientRect();
 
-      // Clone node for animation
       const clone = redDot.cloneNode(false);
       clone.style.position = "fixed";
       clone.style.left = `${startRect.left}px`;
-      clone.style.top  = `${startRect.top}px`;
-      clone.style.width  = `${startRect.width}px`;
+      clone.style.top = `${startRect.top}px`;
+      clone.style.width = `${startRect.width}px`;
       clone.style.height = `${startRect.height}px`;
       clone.style.borderRadius = "50%";
       clone.style.backgroundColor = "red";
@@ -685,44 +878,38 @@ toggleBtn.addEventListener("click", () => {
       clone.style.willChange = "transform, background-color";
       document.body.appendChild(clone);
 
-      // Remove original immediately
       redDot.remove();
 
-      const upDistance    = -(startRect.top - 40); // pixel shift to reach 40 px from viewport top
-      const acrossDistance= (endRect.left + (endRect.width - startRect.width) / 2) - startRect.left;
-      const downDistance  = (endRect.bottom - startRect.height / 2) - 40;
+      const upDistance = -(startRect.top - 40);
+      const acrossDistance = (endRect.left + (endRect.width - startRect.width) / 2) - startRect.left;
+      const downDistance = (endRect.bottom - startRect.height / 2) - 40;
 
-      // Helper to compose translate
       const tr = (dx, dy) => `translate(${dx}px, ${dy}px)`;
 
-      // ── Stage 1: smooth rise (two‑frame hack ensures transition fires) ──
-      clone.style.transform = tr(0, 0);          // starting point
+      clone.style.transform = tr(0, 0);
       requestAnimationFrame(() => {
         clone.style.transition = "transform 0.5s ease-out";
-        requestAnimationFrame(() => {            // second frame → actual move
+        requestAnimationFrame(() => {
           clone.style.transform = tr(0, upDistance);
         });
       });
 
-      // ── Stage 2: slide across ──
       setTimeout(() => {
         clone.style.transition = "transform 0.8s ease-out";
-        clone.style.transform  = tr(acrossDistance, upDistance);
+        clone.style.transform = tr(acrossDistance, upDistance);
       }, 550);
 
-      // ── Stage 3: colour change + drop ──
       setTimeout(() => {
         clone.style.transition = "transform 0.5s ease-in, background-color 0.2s linear";
-        clone.style.transform  = tr(acrossDistance, upDistance + downDistance);
+        clone.style.transform = tr(acrossDistance, upDistance + downDistance);
         clone.style.backgroundColor = "green";
       }, 1400);
 
-      // ── Finish: commit real green dot ──
       setTimeout(() => {
         const newDot = document.createElement("div");
         newDot.classList.add("dot", "green");
-        newDot.style.width  = clone.style.width;
-        newDot.style.height = clone.style.height;
+        newDot.style.setProperty("width", clone.style.width, "important");
+        newDot.style.setProperty("height", clone.style.height, "important");
         rightCol.appendChild(newDot);
         clone.remove();
       }, 1950);
@@ -745,8 +932,8 @@ toggleBtn.addEventListener("click", () => {
           clearInterval(intervalId);
           intervalId = null;
           timerDisplay.textContent = "🏁";
-          timerDisplay.style.color       = "green";
-          timerDisplay.style.fontWeight  = "bold";
+          timerDisplay.style.color = "green";
+          timerDisplay.style.fontWeight = "bold";
           timerDisplay.classList.remove("flashing-red");
           toggleBtn.disabled = true;
           resetBtn.disabled = false;
@@ -755,246 +942,29 @@ toggleBtn.addEventListener("click", () => {
         console.error("Error pinging for scans:", err);
       }
     }
-    setInterval(checkForNewScans, 2000);
 
-window.addEventListener("message", function (event) {
-  console.log("🟢 Received message from settings:", event.data);
-  if (event.data.type === "settings") {
-    const { minutes, seconds, teams, green_teams, session_id } = event.data;
-    if (
-      typeof minutes === "number" && !isNaN(minutes) &&
-      typeof seconds === "number" && !isNaN(seconds)
-    ) {
-      totalSeconds = minutes * 60 + seconds;
-      if (minutes === -1) {
-        // existing negative special-case
-        totalSeconds = 0;
-        timerDisplay.textContent = "00:00";
-        timerDisplay.style.color = "red";
-        timerDisplay.classList.add("flashing-red");
-        // toggleBtn.disabled = true;
-        // resetBtn.disabled = true;
-        updateButtonsLayout();
-        return;
+    // ─── Initialize ───
+    window.addEventListener("DOMContentLoaded", async () => {
+      // Load session state
+      await loadSessionState();
+      
+      // Initialize session indicator
+      const sessionIndicator = document.getElementById("session-indicator");
+      const stored = sessionStorage.getItem("session") || "default";
+      sessionIndicator.textContent = `Session ID: ${stored}`;
+      updateAddressBar(stored);
+      
+      // Initialize QR
+      const qrImg = document.querySelector(".qr-section img");
+      if (qrImg) {
+        qrImg.src = stored && stored !== "default" ? `/qr-image?session=${encodeURIComponent(stored)}` : "/qr-image";
       }
-      // ── If timer is zero AND no dots specified → treat as fresh/no‑config
-      const noDotsRequested =
-        (typeof teams !== "number" || teams === 0) &&
-        (typeof green_teams !== "number" || green_teams === 0);
-
-      if (totalSeconds === 0 && noDotsRequested) {
-        // Treat as fresh / no‑config
-        hasConfig = false;
-        optionsBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-        resetStage = 0;
-        updateButtonsLayout();
-
-        /* ── Still apply session‑id change, if provided ── */
-        if (session_id !== undefined) {
-          const session = session_id || "default";
-          const sessionIndicator = document.getElementById("session-indicator");
-          if (sessionIndicator) {
-            sessionIndicator.textContent = `Session ID: ${session}`;
-          }
-          sessionStorage.setItem("session", session);
-          updateAddressBar(session);
-
-          // Refresh embedded QR
-          const qrImg = document.querySelector(".qr-section img");
-          if (qrImg) {
-            qrImg.src = session && session !== "default"
-              ? `/qr-image?session=${encodeURIComponent(session)}`
-              : "/qr-image";
-          }
-
-          // Reload this session's UI config
-          if (typeof loadAndApplyConfig === "function") {
-            loadAndApplyConfig(true);
-          }
-        }
-        return;   // done
-      }
-      updateTimerDisplay();
-      timerDisplay.style.color      = "";
-      timerDisplay.style.fontWeight = "";
-      timerDisplay.classList.remove("flashing-red");
-      if (config && config.ui && config.ui.font_color) {
-        timerDisplay.style.color = config.ui.font_color;
-      }
-      toggleBtn.disabled = false;
-      // resetBtn.disabled = false;
-    }
-        if (typeof teams === "number" && !isNaN(teams)) {
-          const leftDots  = document.getElementById("left-dots");
-          const rightDots = document.getElementById("right-dots");
-          leftDots.innerHTML  = "";
-          rightDots.innerHTML = "";
-          lastSeenCount = 0;
-          const currentSession = getCurrentSession();
-          fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
-
-          const dotSizeMap = {
-            S: 1.0,
-            M: 1.15,
-            L: 1.3,
-            XL: 1.5
-          };
-          let dotSize = event.data.dot_size;
-          if (!dotSize && config && config.ui && config.ui.dot_size) {
-            dotSize = config.ui.dot_size;
-          }
-          const scale = dotSizeMap[dotSize] || 1.0;
-
-          const scaledPx = size => `${Math.round(16 * scale)}px`;
-
-          for (let i = 0; i < teams; i++) {
-            const dot = document.createElement("div");
-            dot.classList.add("dot", "red");
-            dot.style.width = scaledPx();
-            dot.style.height = scaledPx();
-            leftDots.appendChild(dot);
-          }
-
-          if (typeof event.data.green_teams === "number" && !isNaN(event.data.green_teams)) {
-            for (let i = 0; i < event.data.green_teams; i++) {
-              const dot = document.createElement("div");
-              dot.classList.add("dot", "green");
-              dot.style.width = scaledPx();
-              dot.style.height = scaledPx();
-              rightDots.appendChild(dot);
-            }
-          }
-        }
-        // Store last configured values for future Reset
-        if (typeof minutes === "number" && typeof seconds === "number") {
-          lastConfigured.seconds = minutes * 60 + seconds;
-        }
-        if (typeof teams === "number") {
-          lastConfigured.red = teams;
-        }
-        if (typeof green_teams === "number") {
-          lastConfigured.green = green_teams;
-        }
-        if (event.data.dot_size) {
-          lastConfigured.dotSize = event.data.dot_size;
-        }
-        hasConfig = true;                // we now have a config
-        resetStage = 0;
-        optionsBtn.classList.remove("hidden");   // show Edit/Pencil button
-        // ── Keep Reset visible as long as countdown value > 0
-        if (totalSeconds > 0) {
-          resetBtn.classList.remove("hidden");
-        } else {
-          resetBtn.classList.add("hidden");
-        }
-        updateButtonsLayout();
-        // --- Session indicator update ---
-        const sessionIndicator = document.getElementById("session-indicator");
-        if (sessionIndicator) {
-          const session = event.data.session_id || "default";
-          sessionIndicator.textContent = `Session ID: ${session}`;
-          // Save selected session to sessionStorage
-          sessionStorage.setItem("session", session);
-          updateAddressBar(session);
-          // Dynamically update QR image source
-          const qrImg = document.querySelector(".qr-section img");
-          if (qrImg) qrImg.src = `/qr-image?session=${encodeURIComponent(session)}`;
-        }
-        // Immediately apply this session's UI config without a reload
-        if (typeof loadAndApplyConfig === 'function') {
-          loadAndApplyConfig(true);
-        }
-        // ---
-        console.log("✔️ Settings applied:", event.data);
-      }
+      
+      updateButtonsLayout();
     });
 
-    // ─────────── Step 3: Load and apply /api/config on page load ───────────
-  async function loadAndApplyConfig(preserveTimer = false) {
-    // Preserve the timer state
-    const preservedTime = totalSeconds;
-    try {
-      const currentSession = getCurrentSession();
-      const resp = await fetch(`/api/config?session=${encodeURIComponent(currentSession)}`);
-      if (!resp.ok) throw new Error("Cannot fetch /api/config");
-      config = await resp.json();
-      console.log("🔧 Loaded session config:", config);
-
-      // 1) If there's a background_image set (not null/empty), use it:
-      if (config.ui && config.ui.background_image !== null && config.ui.background_image !== "") {
-        lastKnownBackgroundImage = config.ui.background_image;
-        document.body.style.backgroundImage = `url("/static/${config.ui.background_image}")`;
-        document.body.style.backgroundSize = "cover";
-        document.body.style.backgroundRepeat = "no-repeat";
-        document.body.style.backgroundPosition = "center";
-        document.body.style.backgroundColor = "";
-      } else if (config.ui?.background_image === null && config.ui?.background_color) {
-        lastKnownBackgroundImage = null;
-        document.body.style.backgroundImage = "none";
-        document.body.style.backgroundColor = config.ui.background_color;
-      } else if (lastKnownBackgroundImage) {
-        document.body.style.backgroundImage = `url("/static/${lastKnownBackgroundImage}")`;
-        document.body.style.backgroundSize = "cover";
-        document.body.style.backgroundRepeat = "no-repeat";
-        document.body.style.backgroundPosition = "center";
-        document.body.style.backgroundColor = "";
-      }
-
-      // 3) If there's a font_family, apply it:
-      if (config.ui && config.ui.font_family) {
-        document.body.style.fontFamily = `"${config.ui.font_family}", sans-serif`;
-      }
-
-      // 4) If there's a font_color, apply it:
-      if (config.ui && config.ui.font_color) {
-        timerDisplay.style.color = config.ui.font_color;
-      }
-      // ─── Set pill‑button colours from config ───
-      const primary = (config.ui && config.ui.font_color)        || '#333';
-      const secondary = (config.ui && config.ui.background_color) ? primary+'99' : '#666';
-      document.documentElement.style.setProperty('--btn-primary', primary);
-      document.documentElement.style.setProperty('--btn-secondary', secondary);
-
-      // Restore the timer state after applying config if preserveTimer is true
-      if (preserveTimer) {
-        totalSeconds = preservedTime;
-        updateTimerDisplay();
-        // Reapply dot size to all visible dots
-        const dotSizeMap = {
-          S: 1.0,
-          M: 2.00,
-          L: 3.00,
-          XL: 4.00
-        };
-        const scale = dotSizeMap[config.ui?.dot_size] || 1.0;
-        document.querySelectorAll(".dot").forEach(dot => {
-          dot.style.width = `${Math.round(16 * scale)}px`;
-          dot.style.height = `${Math.round(16 * scale)}px`;
-        });
-      }
-    } catch (e) {
-      console.warn("Could not load/apply config:", e);
-    }
-  }
-
-  // On DOMContentLoaded (i.e. when page first loads), run:
-  window.addEventListener("DOMContentLoaded", loadAndApplyConfig);
-
-  // ─── Initialize embedded QR with current session ───
-  window.addEventListener("DOMContentLoaded", () => {
-    const session = getCurrentSession();
-    const qrImg = document.querySelector(".qr-section img");
-    if (qrImg) {
-      // include session param if not default
-      qrImg.src = session && session !== "default"
-        ? `/qr-image?session=${encodeURIComponent(session)}`
-        : "/qr-image";
-    }
-    updateButtonsLayout();   // ensure correct layout at startup
-  });
-
-  // You can also call loadAndApplyConfig() after each time you reload/reset the dots, etc.
+    // Start scan checking
+    setInterval(checkForNewScans, 2000);
   </script>
 </body>
 </html>

@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Edit Timer Configuration</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Lato&family=Playfair+Display&family=Oswald&family=Source+Sans+Pro&display=swap" rel="stylesheet">
+  <title>Edit Timer Configuration (Admin)</title>
   <style>
     body {
       font-family: "Segoe UI", "Helvetica Neue", sans-serif;
@@ -16,13 +15,10 @@
     }
     textarea {
       width: 100%;
-      height: 200px;
+      height: 300px;
       font-family: monospace;
       margin-top: 5px;
       resize: vertical;
-    }
-    input[type="file"], input[type="color"] {
-      margin-top: 5px;
     }
     .buttons {
       margin-top: 20px;
@@ -32,86 +28,31 @@
       padding: 8px 16px;
       margin-right: 10px;
     }
-    .form-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 1em;
-    }
-    .form-row label {
-      margin-top: 0;
-    }
-    .custom-file-label {
-      padding: 6px 12px;
-      background: #e0e0e0;
+    .admin-note {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
       border-radius: 4px;
-      cursor: pointer;
-      border: 1px solid #ccc;
-      display: inline-block;
-    }
-    .filename-indicator {
-      font-style: italic;
-      font-size: 0.9em;
-      margin-left: 10px;
+      padding: 10px;
+      margin-bottom: 20px;
     }
     .danger-action {
       display: block;
-      margin-left: 20px;   /* indent both danger‑zone actions equally */
+      margin-left: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>Edit Timer Configuration</h1>
+  <h1>Edit Timer Configuration (Admin)</h1>
+  
+  <div class="admin-note">
+    <strong>Note:</strong> This is an advanced admin interface for editing the raw JSON configuration. 
+    For regular settings (timer, dots, appearance), use the main timer's settings popup instead.
+  </div>
 
-  <form id="config-form" enctype="multipart/form-data">
+  <form id="config-form">
+    <label for="config_json">Configuration (JSON):</label>
+    <textarea id="config_json" name="config_json">{{ config_content }}</textarea>
 
-    <div class="form-row">
-      <label for="background_color">background:</label>
-      <input type="color" id="background_color" name="background_color" value="{{ background_color }}" />
-      <span>or</span>
-      <input type="file" id="bg_file" name="bg_file" accept="image/*" style="opacity: 0; width: 0; height: 0; position: absolute;" />
-      <label for="bg_file" class="custom-file-label">Choose File</label>
-      <span id="bg_file_label" class="filename-indicator"></span>
-    </div>
-
-    <div class="form-row">
-      <label for="font_color">font color:  </label>
-      <input type="color" id="font_color" name="font_color" value="{{ font_color }}" />
-    </div>
-
-    <div class="form-row">
-      <label for="font_family">font family:</label>
-      <select id="font_family" name="font_family">
-        <option style="font-family: Arial;" value="Arial">Arial</option>
-        <option style="font-family: 'Courier New';" value="Courier New">Courier New</option>
-        <option style="font-family: Georgia;" value="Georgia">Georgia</option>
-        <option style="font-family: 'Times New Roman';" value="Times New Roman">Times New Roman</option>
-        <option style="font-family: Verdana;" value="Verdana">Verdana</option>
-        <option style="font-family: monospace;" value="monospace">Monospace</option>
-        <option style="font-family: Tahoma;" value="Tahoma">Tahoma</option>
-        <option style="font-family: 'Trebuchet MS';" value="Trebuchet MS">Trebuchet MS</option>
-        <option style="font-family: Impact;" value="Impact">Impact</option>
-        <option style="font-family: 'Roboto';" value="Roboto">Roboto</option>
-        <option style="font-family: 'Lato';" value="Lato">Lato</option>
-        <option style="font-family: 'Playfair Display';" value="Playfair Display">Playfair Display</option>
-        <option style="font-family: 'Oswald';" value="Oswald">Oswald</option>
-        <option style="font-family: 'Source Sans Pro';" value="Source Sans Pro">Source Sans Pro</option>
-      </select>
-    </div>
-
-    <div class="form-row">
-      <label>dot size:</label>
-      <label><input type="radio" name="dot_size" value="S" /> S</label>
-      <label><input type="radio" name="dot_size" value="M" /> M</label>
-      <label><input type="radio" name="dot_size" value="L" /> L</label>
-      <label><input type="radio" name="dot_size" value="XL" /> XL</label>
-    </div>
-
-    <a href="#" id="toggle-raw-config" style="display: block; margin-top: 1em; margin-bottom: 1em; color: black;">show raw config ▼</a>
-    <div id="raw-config-wrapper" style="display: none;">
-      <label for="config_json">Configuration (JSON):</label>
-      <textarea id="config_json" name="config_json">{{ config_content }}</textarea>
-    </div>
     <a href="#" id="toggle-danger-zone" style="display: block; margin-top: 1em; color: red;">
       danger zone ▼
     </a>
@@ -124,282 +65,128 @@
     <div class="buttons">
       <button type="submit">Save</button>
       <button type="button" onclick="window.close()">Cancel</button>
-      <button type="button" id="reset-config-button" style="margin-left: 40px;">Reset all configurations</button>
+      <button type="button" id="reset-config-button" style="margin-left: 40px;">Reset to Default</button>
     </div>
   </form>
+
   <script>
-    let lastKnownBackgroundImage = null;
-
-    const fontColorInput = document.getElementById("font_color");
-    const configTextarea = document.getElementById("config_json");
-
-    fontColorInput.addEventListener("input", () => {
-      try {
-        const config = JSON.parse(configTextarea.value);
-        config.ui = config.ui || {};
-        config.ui.font_color = fontColorInput.value;
-        configTextarea.value = JSON.stringify(config, null, 2);
-      } catch (e) {
-        console.error("Invalid JSON while updating font color", e);
-      }
+    // Toggle Danger Zone section
+    const dangerToggle = document.getElementById("toggle-danger-zone");
+    const dangerWrapper = document.getElementById("danger-zone-wrapper");
+    dangerToggle.addEventListener("click", e => {
+      e.preventDefault();
+      const hidden = dangerWrapper.style.display === "none";
+      dangerWrapper.style.display = hidden ? "block" : "none";
+      dangerToggle.textContent = hidden ? "danger zone ▲" : "danger zone ▼";
     });
 
-    const bgColorInput = document.getElementById("background_color");
-
-    bgColorInput.addEventListener("input", () => {
-      try {
-        const config = JSON.parse(configTextarea.value);
-        config.ui = config.ui || {};
-        config.ui.background_color = bgColorInput.value;
-        delete config.ui.background_image;
-        configTextarea.value = JSON.stringify(config, null, 2);
-        lastKnownBackgroundImage = null;
-        document.getElementById("bg_file_label").textContent = "";
-        document.getElementById("bg_file").value = "";
-      } catch (e) {
-        console.error("Invalid JSON while updating background color", e);
-      }
-    });
-
-    const fontSelect = document.getElementById("font_family");
-    fontSelect.addEventListener("change", () => {
-      try {
-        const config = JSON.parse(configTextarea.value);
-        config.ui = config.ui || {};
-        config.ui.font_family = fontSelect.value;
-        configTextarea.value = JSON.stringify(config, null, 2);
-      } catch (e) {
-        console.error("Invalid JSON while updating font family", e);
-      }
-    });
-
-    document.getElementById("bg_file").addEventListener("change", (e) => {
-      const fileInput = e.target;
-      const label = document.getElementById("bg_file_label");
-      const file = fileInput.files[0];
-      if (file) {
-        label.textContent = file.name;
-        lastKnownBackgroundImage = file.name;
-
-        // Clear background color if file is chosen
-        try {
-          const config = JSON.parse(configTextarea.value);
-          config.ui = config.ui || {};
-          config.ui.background_image = file.name;
-          delete config.ui.background_color;
-          configTextarea.value = JSON.stringify(config, null, 2);
-        } catch (e) {
-          console.error("Error updating background image in JSON", e);
+    // Clear all sessions handler
+    const ADMIN_CLEAR_PASSWORD = "3.1415!";
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("clear-sessions-btn").addEventListener("click", e => {
+        e.preventDefault();
+        const pwd = prompt("Enter admin password PI! to clear all sessions:");
+        if (pwd !== ADMIN_CLEAR_PASSWORD) {
+          alert("Incorrect password. Sessions IDs have not been cleared.");
+          return;
         }
-      } else {
-        label.textContent = "";
-        lastKnownBackgroundImage = null;
-      }
+        if (!confirm("⚠️ This will clear ALL session data on the server. Any other user currently using the app would lose their Session IDs. Continue?")) return;
+        fetch("/clear-sessions", { method: "POST" })
+          .then(() => {
+            alert("All sessions cleared.");
+            // Reload opener if available
+            if (window.opener && window.opener.loadAndApplyConfig) {
+              window.opener.loadAndApplyConfig(true);
+            }
+          })
+          .catch(err => console.error("Failed to clear sessions:", err));
+      });
+    });
+
+    // Unlock default handler
+    document.addEventListener("DOMContentLoaded", () => {
+      const unlockBtn = document.getElementById("unlock-default-btn");
+      unlockBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const pwd = prompt("Enter admin password to unlock default:");
+        if (pwd !== ADMIN_CLEAR_PASSWORD) {
+          alert("Incorrect password. Default remains read‑only.");
+          return;
+        }
+        try {
+          const res = await fetch("/unlock-default", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pwd })
+          });
+          if (!res.ok) throw new Error("Server refused unlock");
+          alert("Default profile unlocked for ONE save.\nMake your edits, click Save, then it will lock again.");
+        } catch (err) {
+          alert("Failed to unlock default: " + err);
+        }
+      });
+    });
+
+    // Form submission
+    window.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("config-form");
+      const configTextarea = document.getElementById("config_json");
+      const sessionParam = new URLSearchParams(window.location.search).get("session");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        // Always ensure config_json is up-to-date
+        formData.set("config_json", configTextarea.value);
+        // Always include session param, even if default
+        const sessionParamVal = sessionParam !== null ? sessionParam : "default";
+        const actionUrl = `/edit-config?session=${encodeURIComponent(sessionParamVal)}`;
+
+        try {
+          const resp = await fetch(actionUrl, {
+            method: "POST",
+            body: formData
+          });
+          const data = await resp.json();
+
+          // If backend forked default → new_session present
+          if (data.new_session) {
+            sessionStorage.setItem("session", data.new_session);
+            alert("Hello there! 🐸\n\nJust so you know, your changes will be saved under session " + data.new_session + "\nbecause the *Default* Session ID layout cannot be modified.");
+            if (window.opener && window.opener.document) {
+              const ind = window.opener.document.getElementById("session-indicator");
+              if (ind) ind.textContent = "Session ID: " + data.new_session;
+            }
+          }
+
+          // Always refresh opener config
+          if (window.opener && typeof window.opener.loadAndApplyConfig === 'function') {
+            window.opener.loadAndApplyConfig(true);
+          } else {
+            window.opener?.location?.reload();
+          }
+          window.close();
+        } catch (err) {
+          console.error("Failed to save config:", err);
+        }
+      });
+    });
+
+    // Reset to default
+    document.getElementById("reset-config-button").addEventListener("click", () => {
+      const defaultConfig = {
+        ui: {
+          background_color: "#b36ab4",
+          font_family: "Oswald",
+          font_color: "#000000",
+          dot_size: "S",
+          background_image: null
+        }
+      };
+
+      const configTextarea = document.getElementById("config_json");
+      configTextarea.value = JSON.stringify(defaultConfig, null, 2);
     });
   </script>
-<script>
-  window.addEventListener("DOMContentLoaded", () => {
-    // ... (other DOMContentLoaded logic, if any, can remain here)
-  });
-</script>
-<script>
-  // Toggle Danger Zone section
-  const dangerToggle = document.getElementById("toggle-danger-zone");
-  const dangerWrapper = document.getElementById("danger-zone-wrapper");
-  dangerToggle.addEventListener("click", e => {
-    e.preventDefault();
-    const hidden = dangerWrapper.style.display === "none";
-    dangerWrapper.style.display = hidden ? "block" : "none";
-    dangerToggle.textContent = hidden ? "danger zone ▲" : "danger zone ▼";
-  });
-  // Clear all sessions handler
-  const ADMIN_CLEAR_PASSWORD = "3.1415!";
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("clear-sessions-btn").addEventListener("click", e => {
-      e.preventDefault();
-      const pwd = prompt("Enter admin password PI! to clear all sessions:");
-      if (pwd !== ADMIN_CLEAR_PASSWORD) {
-        alert("Incorrect password. Sessions IDs have not been cleared.");
-        return;
-      }
-      if (!confirm("⚠️ This will clear ALL session data on the server. Any other user currently using the app would lose their Session IDs. Continue?")) return;
-      fetch("/clear-sessions", { method: "POST" })
-        .then(() => {
-          alert("All sessions cleared.");
-          // Reload opener if available
-          if (window.opener && window.opener.loadAndApplyConfig) {
-            window.opener.loadAndApplyConfig(true);
-          }
-        })
-        .catch(err => console.error("Failed to clear sessions:", err));
-    });
-  });
-</script>
-<!-- Unlock default handler -->
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const ADMIN_CLEAR_PASSWORD = "3.1415!";   // same as backend
-    const unlockBtn = document.getElementById("unlock-default-btn");
-    unlockBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const pwd = prompt("Enter admin password to unlock default:");
-      if (pwd !== ADMIN_CLEAR_PASSWORD) {
-        alert("Incorrect password. Default remains read‑only.");
-        return;
-      }
-      try {
-        const res = await fetch("/unlock-default", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pwd })
-        });
-        if (!res.ok) throw new Error("Server refused unlock");
-        alert("Default profile unlocked for ONE save.\nMake your edits, click Save, then it will lock again.");
-      } catch (err) {
-        alert("Failed to unlock default: " + err);
-      }
-    });
-  });
-</script>
-<script>
-  window.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("config-form");
-    const configTextarea = document.getElementById("config_json");
-    const sessionParam = new URLSearchParams(window.location.search).get("session");
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      // Always ensure config_json is up-to-date
-      formData.set("config_json", configTextarea.value);
-      // Always include session param, even if default
-      const sessionParamVal = sessionParam !== null ? sessionParam : "default";
-      const actionUrl = `/edit-config?session=${encodeURIComponent(sessionParamVal)}`;
-
-      try {
-        const resp = await fetch(actionUrl, {
-          method: "POST",
-          body: formData
-        });
-        const data = await resp.json();
-
-        // If backend forked default → new_session present
-        if (data.new_session) {
-          sessionStorage.setItem("session", data.new_session);
-          alert("Hello there! 🐸\n\nJust so you know, your changes will be saved under session " + data.new_session + "\nbecause the *Default* Session ID layout cannot be modified.");
-          if (window.opener && window.opener.document) {
-            const ind = window.opener.document.getElementById("session-indicator");
-            if (ind) ind.textContent = "Session ID: " + data.new_session;
-          }
-        }
-
-        // Always refresh opener config
-        if (window.opener && typeof window.opener.loadAndApplyConfig === 'function') {
-          window.opener.loadAndApplyConfig(true);
-        } else {
-          window.opener?.location?.reload();
-        }
-        window.close();
-      } catch (err) {
-        console.error("Failed to save config:", err);
-      }
-    });
-  });
-</script>
-<script>
-  window.addEventListener("DOMContentLoaded", () => {
-    try {
-      const configTextarea = document.getElementById("config_json");
-      const fontColorInput = document.getElementById("font_color");
-      const fontSelect = document.getElementById("font_family");
-      const config = JSON.parse(configTextarea.value);
-      if (config.ui && config.ui.font_color) {
-        fontColorInput.value = config.ui.font_color;
-      }
-      if (config.ui && config.ui.background_color) {
-        document.getElementById("background_color").value = config.ui.background_color;
-      }
-      if (config.ui && config.ui.font_family) {
-        fontSelect.value = config.ui.font_family;
-      }
-      const bgFileLabel = document.getElementById("bg_file_label");
-      if (config.ui && config.ui.background_image) {
-        bgFileLabel.textContent = config.ui.background_image;
-        lastKnownBackgroundImage = config.ui.background_image;
-      }
-    } catch (e) {
-      console.warn("Unable to extract font_color from JSON config:", e);
-    }
-    const configTextarea = document.getElementById("config_json");
-    try {
-      const config = JSON.parse(configTextarea.value);
-      // Always select a dot size, default to "S" if not set
-      const dotSize = config.ui?.dot_size || "S";
-      const dotInput = document.querySelector(`input[name="dot_size"][value="${dotSize}"]`);
-      if (dotInput) dotInput.checked = true;
-    } catch (e) {
-      // Ignore errors here
-    }
-  });
-</script>
-<script>
-  const toggleBtn = document.getElementById("toggle-raw-config");
-  const rawConfigWrapper = document.getElementById("raw-config-wrapper");
-  toggleBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    const isHidden = rawConfigWrapper.style.display === "none";
-    rawConfigWrapper.style.display = isHidden ? "block" : "none";
-    toggleBtn.textContent = isHidden ? "Hide raw config ▲" : "Show raw config ▼";
-  });
-</script>
-<script>
-  document.getElementById("reset-config-button").addEventListener("click", () => {
-    const defaultConfig = {
-      ui: {
-        background_color: "#b36ab4",
-        font_family: "Oswald",
-        font_color: "#000000",
-        dot_size: "S",
-        background_image: null
-      }
-    };
-
-    const configTextarea = document.getElementById("config_json");
-    configTextarea.value = JSON.stringify(defaultConfig, null, 2);
-
-    // Sync form controls visually
-    document.getElementById("background_color").value = defaultConfig.ui.background_color;
-    document.getElementById("font_color").value = defaultConfig.ui.font_color;
-    document.getElementById("font_family").value = defaultConfig.ui.font_family;
-    document.getElementById("bg_file_label").textContent = "";
-    document.getElementById("bg_file").value = "";
-    lastKnownBackgroundImage = null;
-    const dotInputs = document.querySelectorAll('input[name="dot_size"]');
-    dotInputs.forEach(input => {
-      input.checked = input.value === defaultConfig.ui.dot_size;
-    });
-  });
-</script>
-<script>
-  document.querySelectorAll('input[name="dot_size"]').forEach((el) => {
-    el.addEventListener("change", () => {
-      try {
-        const config = JSON.parse(configTextarea.value);
-        config.ui = config.ui || {};
-        config.ui.dot_size = el.value;
-
-        // Preserve existing background image reference
-        if (!config.ui.background_image && lastKnownBackgroundImage) {
-          config.ui.background_image = lastKnownBackgroundImage;
-          delete config.ui.background_color;
-        }
-
-        configTextarea.value = JSON.stringify(config, null, 2);
-      } catch (e) {
-        console.error("Invalid JSON while updating dot size", e);
-      }
-    });
-  });
-</script>
 </body>
 </html>

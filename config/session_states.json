@@ -1,0 +1,107 @@
+{
+  "13P8XI": {
+    "minutes": 3,
+    "seconds": 0,
+    "teams": 3,
+    "green_teams": 0,
+    "dot_size": "XL"
+  },
+  "KU3JOI": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 3,
+    "green_teams": 0,
+    "dot_size": "S"
+  },
+  "JG600Y": {
+    "minutes": 2,
+    "seconds": 0,
+    "teams": 3,
+    "green_teams": 0,
+    "dot_size": "XL",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Arial",
+    "background_image": "JG600Y_cannes_new_1751643221.png"
+  },
+  "default": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 2,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#d0f0ff",
+    "font_color": "#dd4b4b",
+    "font_family": "Lato",
+    "background_image": "U79VI8_cannes_new_1751647662.png",
+    "custom_font_color_set": true,
+    "session_id": "default",
+    "type": "settings"
+  },
+  "2UX358": {
+    "minutes": 3,
+    "seconds": null,
+    "teams": 2,
+    "green_teams": null,
+    "dot_size": "XL",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Arial",
+    "background_image": null
+  },
+  "lab01": {
+    "minutes": 6,
+    "seconds": null,
+    "teams": 3,
+    "green_teams": null,
+    "dot_size": "L",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Arial",
+    "background_image": null,
+    "type": "settings",
+    "session_id": "lab01"
+  },
+  "U79VI8": {
+    "minutes": 4,
+    "seconds": 10,
+    "teams": 4,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#d0f0ff",
+    "font_color": "#201d1d",
+    "font_family": "Lato",
+    "background_image": "U79VI8_cannes_new_1751647662.png",
+    "custom_font_color_set": true,
+    "session_id": "U79VI8",
+    "type": "settings"
+  },
+  "lab99": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 2,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#d0f0ff",
+    "font_color": "#dd4b4b",
+    "font_family": "Lato",
+    "background_image": "U79VI8_cannes_new_1751647662.png",
+    "custom_font_color_set": true,
+    "session_id": "default",
+    "type": "settings"
+  },
+  "4A2NUT": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 0,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#d0f0ff",
+    "font_color": "#dd4b4b",
+    "font_family": "Lato",
+    "background_image": "U79VI8_cannes_new_1751647662.png",
+    "custom_font_color_set": true,
+    "session_id": "default",
+    "type": "settings"
+  }
+}

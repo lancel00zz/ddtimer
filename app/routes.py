@@ -3,6 +3,7 @@ import io
 import os
 import json
 import qrcode
+import time
 
 # ── helper to load default UI from config/config.json at every startup ──
 from pathlib import Path
@@ -39,8 +40,12 @@ from werkzeug.utils import secure_filename
 
 from collections import defaultdict
 from datetime import datetime
+from threading import Lock
 
 session_configs = defaultdict(lambda: _load_default_from_file())
+
+# In-memory session-scoped tracking for /done, /ping, /reset
+sessions = defaultdict(lambda: {"count": 0, "last_ping": datetime.now()})
 
 # 1) Define a Blueprint called "main"
 main = Blueprint("main", __name__)
@@ -87,15 +92,9 @@ def settings():
 @main.route("/edit-config", methods=["GET", "POST"])
 def edit_config():
     """
-    GET  → Load config/config.json, pretty-print its contents inside edit-config.html.
-    POST → 
-      1) Read the JSON from the textarea and overwrite config/config.json.
-      2) Read the color-picker value (background_color) and save into JSON.
-      3) If a background-image file was uploaded, save it under app/static/ and update JSON.
-      4) Return a small <script> that reloads the opener window (timer) and closes this popup.
+    GET  → Load config/session_states.json, pretty-print the session's state inside edit-config.html.
+    POST → Read the JSON from the textarea and overwrite the session's state in session_states.json.
     """
-    config_path = os.path.join("config", "config.json")
-
     if request.method == "POST":
         session_id = request.args.get("session", "default")
 
@@ -117,33 +116,10 @@ def edit_config():
         except Exception as e:
             return f"<h1>Invalid JSON</h1><p>{e}</p>", 400
 
-        if "ui" not in parsed or not isinstance(parsed["ui"], dict):
-            parsed["ui"] = {}
-
-        picked_color = request.form.get("background_color", "").strip()
-        bg_file_obj = request.files.get("bg_file")
-
-        # If a new background image is uploaded, handle below; 
-        # otherwise decide whether to use picked_color.
-        if bg_file_obj is None or not bg_file_obj.filename:
-            # Only apply background_color when NO image is currently set
-            # (prevents wiping an existing background image when merely changing dot size).
-            if picked_color and not parsed["ui"].get("background_image"):
-                parsed["ui"]["background_color"] = picked_color
-
-        if bg_file_obj and bg_file_obj.filename:
-            file = bg_file_obj
-            if file and file.filename:
-                filename = secure_filename(file.filename)
-                save_path = os.path.join("app", "static", filename)
-                try:
-                    file.save(save_path)
-                except Exception as save_err:
-                    return f"<h1>Failed to save image</h1><p>{save_err}</p>", 500
-                parsed["ui"]["background_image"] = filename
-                parsed["ui"]["background_color"] = None
-
-        session_configs[session_id] = parsed
+        # Load all session states
+        all_states = _load_all_session_states()
+        all_states[session_id] = parsed
+        _save_all_session_states(all_states)
 
         # Respond with JSON so the fetch() in edit‑config.html can act on it
         if switch_script:   # we forked into new_id
@@ -153,22 +129,59 @@ def edit_config():
 
     # ─────────────────── If GET → render form with current JSON ───────────────────
     session_id = request.args.get("session", "default")
-    content = session_configs[session_id]
+    all_states = _load_all_session_states()
+    content = all_states.get(session_id)
+    if content is None:
+        # fallback to config.json's UI section, but as a full dict
+        content = _load_default_from_file()
     pretty = json.dumps(content, indent=2)
-    cfg_ui = content.get("ui", {}) if isinstance(content, dict) else {}
-    current_color = cfg_ui.get("background_color") or "#d0f0ff"
 
     return render_template(
         "edit-config.html",
-        config_content=pretty,
-        background_color=current_color
+        config_content=pretty
     )
 
 
 # ───────────────────────────────────────────────────────────────────────
 
-# In-memory session-scoped tracking for /done, /ping, /reset
-sessions = defaultdict(lambda: {"count": 0, "last_ping": datetime.now()})
+SESSION_STATE_FILE = Path("config/session_states.json")
+session_state_lock = Lock()
+
+def _load_all_session_states():
+    if not SESSION_STATE_FILE.exists():
+        return {}
+    try:
+        with SESSION_STATE_FILE.open("r") as f:
+            return json.load(f)
+    except Exception as exc:
+        print(f"[facilitator-timer] Could not read {SESSION_STATE_FILE}: {exc}")
+        return {}
+
+def _save_all_session_states(states):
+    try:
+        with session_state_lock:
+            with SESSION_STATE_FILE.open("w") as f:
+                json.dump(states, f, indent=2)
+    except Exception as exc:
+        print(f"[facilitator-timer] Could not write {SESSION_STATE_FILE}: {exc}")
+
+@main.route("/api/session-state", methods=["GET", "POST"])
+def api_session_state():
+    session_id = request.args.get("session", "default")
+    if request.method == "GET":
+        all_states = _load_all_session_states()
+        state = all_states.get(session_id, {})
+        return jsonify(state)
+    elif request.method == "POST":
+        try:
+            data = request.get_json(force=True)
+        except Exception as e:
+            return jsonify({"error": f"Invalid JSON: {e}"}), 400
+        all_states = _load_all_session_states()
+        all_states[session_id] = data
+        _save_all_session_states(all_states)
+        return jsonify({"ok": True})
+
 
 @main.route("/done")
 def done():
@@ -284,3 +297,34 @@ def clear_sessions():
     session_configs.clear()
     sessions.clear()
     return "OK", 200
+
+
+@main.route("/upload-background", methods=["POST"])
+def upload_background():
+    session = request.args.get("session", "default")
+    
+    if "bg_file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file = request.files["bg_file"]
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
+    
+    if file:
+        # Create a unique filename based on session and original filename
+        filename = secure_filename(file.filename)
+        name, ext = os.path.splitext(filename)
+        unique_filename = f"{session}_{name}_{int(time.time())}{ext}"
+        
+        # Save to static directory
+        static_dir = Path("app/static")
+        static_dir.mkdir(exist_ok=True)
+        file_path = static_dir / unique_filename
+        
+        try:
+            file.save(str(file_path))
+            return jsonify({"filename": unique_filename})
+        except Exception as e:
+            return jsonify({"error": f"Failed to save file: {str(e)}"}), 500
+    
+    return jsonify({"error": "Invalid file"}), 400
