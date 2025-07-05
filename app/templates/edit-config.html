@@ -4,189 +4,309 @@
   <meta charset="UTF-8" />
   <title>Edit Timer Configuration (Admin)</title>
   <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
     body {
-      font-family: "Segoe UI", "Helvetica Neue", sans-serif;
-      padding: 20px;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #2d3748;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0;
+    }
+    .config-card {
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      margin-top: 0;
+      padding: 32px 32px 24px 32px;
+      width: 520px;
+      max-width: 95vw;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      letter-spacing: 0.5px;
+      color: #22223b;
+      text-align: left;
     }
     label {
       display: block;
       margin-top: 1em;
-      font-weight: bold;
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 1rem;
     }
     textarea {
       width: 100%;
-      height: 300px;
-      font-family: monospace;
-      margin-top: 5px;
+      height: 320px;
+      font-family: 'Menlo', 'Consolas', 'Liberation Mono', 'monospace';
+      font-size: 0.85rem;
+      margin-top: 8px;
+      border-radius: 8px;
+      border: 1.5px solid #e2e8f0;
+      background: #f7fafc;
+      padding: 12px;
       resize: vertical;
+      box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+      transition: border 0.2s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      background: #fff;
     }
     .buttons {
-      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 18px;
     }
     button {
       font-size: 1rem;
-      padding: 8px 16px;
-      margin-right: 10px;
+      font-weight: 500;
+      padding: 8px 22px;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+    }
+    button[type="submit"], .buttons .primary {
+      background: #667eea;
+      color: #fff;
+    }
+    button[type="submit"]:hover, .buttons .primary:hover {
+      background: #5a67d8;
+    }
+    button[type="button"] {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+    button[type="button"]:hover {
+      background: #cbd5e0;
+    }
+    #reset-config-button {
+      background: #e6fffa;
+      color: #319795;
+      border: 1px solid #81e6d9;
+      margin-left: auto;
+      font-size: 0.95rem;
+      padding: 7px 16px;
+    }
+    #reset-config-button:hover {
+      background: #b2f5ea;
     }
     .admin-note {
-      background-color: #fff3cd;
+      background: #fffbe6;
       border: 1px solid #ffeaa7;
-      border-radius: 4px;
-      padding: 10px;
-      margin-bottom: 20px;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      font-size: 0.98rem;
+      color: #7c6f57;
     }
     .danger-action {
       display: block;
       margin-left: 20px;
+      color: #e53e3e !important;
+      font-weight: 500;
+      font-size: 0.98rem;
+      margin-top: 6px;
+    }
+    #toggle-danger-zone {
+      color: #e53e3e;
+      font-weight: 600;
+      font-size: 1rem;
+      margin-top: 1em;
+      cursor: pointer;
+      text-decoration: underline;
+      display: block;
+    }
+    #danger-zone-wrapper {
+      margin-top: 0.2em;
+    }
+    .button-row {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+      width: 100%;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+      background: transparent;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 16px 0 8px 0;
+      margin-bottom: 8px;
+    }
+    .primary {
+      background: #667eea;
+      color: #fff;
+      font-weight: 500;
+      border: none;
+      border-radius: 7px;
+      padding: 8px 22px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+    }
+    .primary:hover {
+      background: #5a67d8;
+    }
+    .secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+      font-weight: 500;
+      border: none;
+      border-radius: 7px;
+      padding: 8px 22px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+    }
+    .secondary:hover {
+      background: #cbd5e0;
     }
   </style>
 </head>
 <body>
-  <h1>Edit Timer Configuration (Admin)</h1>
-  
-  <div class="admin-note">
-    <strong>Note:</strong> This is an advanced admin interface for editing the raw JSON configuration. 
-    For regular settings (timer, dots, appearance), use the main timer's settings popup instead.
+  <div class="button-row sticky-buttons">
+    <button class="secondary" type="button" onclick="window.close()">Cancel</button>
+    <button class="primary" type="submit" form="config-form">Save</button>
+  </div>
+  <div class="config-card">
+    <h1>Edit Timer Configuration (Admin)</h1>
+    <div class="admin-note">
+      <strong>Note:</strong> This is an advanced admin interface for editing the raw JSON configuration. 
+      For regular settings (timer, dots, appearance), use the main timer's settings popup instead.
+    </div>
+    <form id="config-form">
+      <label for="config_json">Configuration (JSON):</label>
+      <textarea id="config_json" name="config_json">{{ config_content }}</textarea>
+      <!-- Danger zone removed -->
+      <div class="buttons">
+        <!-- Removed Reset to Default button -->
+      </div>
+    </form>
   </div>
 
-  <form id="config-form">
-    <label for="config_json">Configuration (JSON):</label>
-    <textarea id="config_json" name="config_json">{{ config_content }}</textarea>
-
-    <a href="#" id="toggle-danger-zone" style="display: block; margin-top: 1em; color: red;">
-      danger zone ▼
-    </a>
-    <div id="danger-zone-wrapper" style="display: none; margin-top: 0.2em;">
-      <a href="#" id="clear-sessions-btn" class="danger-action" style="color: red;">clear all session IDs!</a>
-      <a href="#" id="unlock-default-btn" class="danger-action" style="color: red;">unlock default config</a>
-    </div>
-
-    <!-- ── Save / Cancel ── -->
-    <div class="buttons">
-      <button type="submit">Save</button>
-      <button type="button" onclick="window.close()">Cancel</button>
-      <button type="button" id="reset-config-button" style="margin-left: 40px;">Reset to Default</button>
-    </div>
-  </form>
-
-  <script>
-    // Toggle Danger Zone section
-    const dangerToggle = document.getElementById("toggle-danger-zone");
-    const dangerWrapper = document.getElementById("danger-zone-wrapper");
-    dangerToggle.addEventListener("click", e => {
-      e.preventDefault();
-      const hidden = dangerWrapper.style.display === "none";
-      dangerWrapper.style.display = hidden ? "block" : "none";
-      dangerToggle.textContent = hidden ? "danger zone ▲" : "danger zone ▼";
-    });
-
-    // Clear all sessions handler
-    const ADMIN_CLEAR_PASSWORD = "3.1415!";
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("clear-sessions-btn").addEventListener("click", e => {
-        e.preventDefault();
-        const pwd = prompt("Enter admin password PI! to clear all sessions:");
-        if (pwd !== ADMIN_CLEAR_PASSWORD) {
-          alert("Incorrect password. Sessions IDs have not been cleared.");
-          return;
-        }
-        if (!confirm("⚠️ This will clear ALL session data on the server. Any other user currently using the app would lose their Session IDs. Continue?")) return;
-        fetch("/clear-sessions", { method: "POST" })
-          .then(() => {
-            alert("All sessions cleared.");
-            // Reload opener if available
-            if (window.opener && window.opener.loadAndApplyConfig) {
-              window.opener.loadAndApplyConfig(true);
-            }
-          })
-          .catch(err => console.error("Failed to clear sessions:", err));
-      });
-    });
-
-    // Unlock default handler
-    document.addEventListener("DOMContentLoaded", () => {
-      const unlockBtn = document.getElementById("unlock-default-btn");
-      unlockBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        const pwd = prompt("Enter admin password to unlock default:");
-        if (pwd !== ADMIN_CLEAR_PASSWORD) {
-          alert("Incorrect password. Default remains read‑only.");
-          return;
-        }
-        try {
-          const res = await fetch("/unlock-default", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pwd })
-          });
-          if (!res.ok) throw new Error("Server refused unlock");
-          alert("Default profile unlocked for ONE save.\nMake your edits, click Save, then it will lock again.");
-        } catch (err) {
-          alert("Failed to unlock default: " + err);
-        }
-      });
-    });
-
-    // Form submission
-    window.addEventListener("DOMContentLoaded", () => {
-      const form = document.getElementById("config-form");
-      const configTextarea = document.getElementById("config_json");
-      const sessionParam = new URLSearchParams(window.location.search).get("session");
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        // Always ensure config_json is up-to-date
-        formData.set("config_json", configTextarea.value);
-        // Always include session param, even if default
-        const sessionParamVal = sessionParam !== null ? sessionParam : "default";
-        const actionUrl = `/edit-config?session=${encodeURIComponent(sessionParamVal)}`;
-
-        try {
-          const resp = await fetch(actionUrl, {
-            method: "POST",
-            body: formData
-          });
-          const data = await resp.json();
-
-          // If backend forked default → new_session present
-          if (data.new_session) {
-            sessionStorage.setItem("session", data.new_session);
-            alert("Hello there! 🐸\n\nJust so you know, your changes will be saved under session " + data.new_session + "\nbecause the *Default* Session ID layout cannot be modified.");
-            if (window.opener && window.opener.document) {
-              const ind = window.opener.document.getElementById("session-indicator");
-              if (ind) ind.textContent = "Session ID: " + data.new_session;
-            }
-          }
-
-          // Always refresh opener config
-          if (window.opener && typeof window.opener.loadAndApplyConfig === 'function') {
-            window.opener.loadAndApplyConfig(true);
-          } else {
-            window.opener?.location?.reload();
-          }
-          window.close();
-        } catch (err) {
-          console.error("Failed to save config:", err);
-        }
-      });
-    });
-
-    // Reset to default
-    document.getElementById("reset-config-button").addEventListener("click", () => {
-      const defaultConfig = {
-        ui: {
-          background_color: "#b36ab4",
-          font_family: "Oswald",
-          font_color: "#000000",
-          dot_size: "S",
-          background_image: null
-        }
-      };
-
-      const configTextarea = document.getElementById("config_json");
-      configTextarea.value = JSON.stringify(defaultConfig, null, 2);
-    });
-  </script>
 </body>
+<script>
+  // Global error handler
+  window.onerror = function(msg, url, line, col, error) {
+    console.error('Global JS error:', msg, url, line, col, error);
+  };
+
+  // Toggle Danger Zone section
+  // Danger zone logic removed
+
+  // Form submission
+  window.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("config-form");
+    const configTextarea = document.getElementById("config_json");
+    const sessionParam = new URLSearchParams(window.location.search).get("session");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      // Always ensure config_json is up-to-date
+      formData.set("config_json", configTextarea.value);
+      // Always include session param, even if default
+      const sessionParamVal = sessionParam !== null ? sessionParam : "default";
+      const actionUrl = `/edit-config?session=${encodeURIComponent(sessionParamVal)}`;
+
+      try {
+        const resp = await fetch(actionUrl, {
+          method: "POST",
+          body: formData
+        });
+        const data = await resp.json();
+
+        // If backend forked default → new_session present
+        if (data.new_session) {
+          sessionStorage.setItem("session", data.new_session);
+          alert("Hello there! 🐸\n\nJust so you know, your changes will be saved under session " + data.new_session + "\nbecause the *Default* Session ID layout cannot be modified.");
+          if (window.opener && window.opener.document) {
+            const ind = window.opener.document.getElementById("session-indicator");
+            if (ind) ind.textContent = "Session ID: " + data.new_session;
+          }
+        }
+
+        // Always refresh opener config
+        if (window.opener && typeof window.opener.loadAndApplyConfig === 'function') {
+          window.opener.loadAndApplyConfig(true);
+        } else {
+          window.opener?.location?.reload();
+        }
+        window.close();
+      } catch (err) {
+        console.error("Failed to save config:", err);
+      }
+    });
+  });
+
+  // Reset to default
+  document.getElementById("reset-config-button")?.addEventListener("click", () => {
+    const defaultConfig = {
+      ui: {
+        background_color: "#b36ab4",
+        font_family: "Oswald",
+        font_color: "#000000",
+        dot_size: "S",
+        background_image: null
+      }
+    };
+
+    const configTextarea = document.getElementById("config_json");
+    configTextarea.value = JSON.stringify(defaultConfig, null, 2);
+  });
+
+  // Track if the JSON textarea has been changed
+  let isDirty = false;
+  document.addEventListener("DOMContentLoaded", () => {
+    const configTextarea = document.getElementById("config_json");
+    if (configTextarea) {
+      configTextarea.addEventListener("input", () => {
+        isDirty = true;
+      });
+    }
+  });
+
+  // Bulletproof ESC handler: attach to document, window, and textarea, for both keydown and keyup, with capture: true
+  function handleEscToClose(e) {
+    if (e.key === "Escape" || e.key === "Esc") {
+      console.log('ESC pressed, closing window');
+      e.preventDefault();
+      window.close();
+    }
+  }
+  document.addEventListener("keydown", handleEscToClose, true);
+  document.addEventListener("keyup", handleEscToClose, true);
+  window.addEventListener("keydown", handleEscToClose, true);
+  window.addEventListener("keyup", handleEscToClose, true);
+  document.addEventListener("DOMContentLoaded", () => {
+    const configTextarea = document.getElementById("config_json");
+    if (configTextarea) {
+      configTextarea.addEventListener("keydown", handleEscToClose, true);
+      configTextarea.addEventListener("keyup", handleEscToClose, true);
+    }
+
+    // Log to confirm script is running
+    console.log('edit-config DOMContentLoaded: script running');
+  });
+</script>
 </html>

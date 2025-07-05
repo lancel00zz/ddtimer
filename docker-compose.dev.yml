@@ -11,9 +11,10 @@
 services:
   facilitator:
     platform: linux/amd64
-    image: lancel00zz/facilitator-timer-app:4.21
+    image: lancel00zz/facilitator-timer-app:4.2
     ports:
       - "5056:5000"
+    pull_policy: always
     volumes:
     ## it loads my dev environment folders inside the container - so it is a direct and live link to them
       - ./:/app

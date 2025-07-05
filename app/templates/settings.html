@@ -17,7 +17,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      width: 420px;
+      width: 500px;
       color: #333;
     }
 
@@ -51,7 +51,11 @@
     }
 
     .section-toggle.collapsed {
-      transform: rotate(-90deg);
+      transform: rotate(0deg); /* Pointing right when collapsed */
+    }
+
+    .section-toggle:not(.collapsed) {
+      transform: rotate(90deg); /* Pointing down when expanded */
     }
 
     .section-title {
@@ -328,6 +332,26 @@
       background: #feb2b2;
     }
 
+    .reset-default-btn {
+      background: #e6fffa;
+      color: #319795;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #81e6d9;
+      margin-left: auto;
+    }
+
+    .reset-default-btn:hover {
+      background: #b2f5ea;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .time-inputs {
       display: flex;
       align-items: center;
@@ -338,6 +362,19 @@
       font-size: 11px;
       color: #718096;
       margin: 0 2px;
+    }
+
+    .auto-mode-desc {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      background: none !important;
+      border: none !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      font-style: italic;
     }
   </style>
 </head>
@@ -359,7 +396,7 @@
         <div class="time-inputs">
           <input type="number" id="time-input" min="0" placeholder="0" />
           <span class="time-label">min</span>
-          <input type="number" id="seconds-input" min="0" max="59" placeholder="0" />
+          <input type="number" id="seconds-input" min="0" max="59" placeholder="0" step="15" />
           <span class="time-label">sec</span>
         </div>
       </div>
@@ -373,16 +410,6 @@
         <label>Green dots:</label>
         <input type="number" id="green-teams" min="0" placeholder="0" />
       </div>
-
-      <div class="input-group">
-        <label>Dot size:</label>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="dot-size" value="S"> S</label>
-          <label class="radio-option"><input type="radio" name="dot-size" value="M"> M</label>
-          <label class="radio-option"><input type="radio" name="dot-size" value="L"> L</label>
-          <label class="radio-option"><input type="radio" name="dot-size" value="XL"> XL</label>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -390,6 +417,7 @@
     <div class="section-header" onclick="toggleSection('appearance')">
       <div class="section-toggle collapsed" id="appearance-toggle"></div>
       <div class="section-title">Appearance</div>
+      <button class="reset-default-btn" onclick="resetAppearanceToDefault(event)">Reset to Default</button>
     </div>
 
     <div class="section-content collapsed" id="appearance-content">
@@ -439,6 +467,33 @@
           <option value="Source Sans Pro">Source Sans Pro</option>
         </select>
       </div>
+
+      <div class="input-group">
+        <label>Dot size:</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="dot-size" value="S"> S</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="M"> M</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="L"> L</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="XL"> XL</label>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Dot style:</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="dot-style" value="circle" checked> Dots</label>
+          <label class="radio-option"><input type="radio" name="dot-style" value="datadog"> Datadog Bits</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Contrast mode:</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="contrast-mode" value="auto" checked> Auto (detect background)</label>
+          <label class="radio-option"><input type="radio" name="contrast-mode" value="light"> Force light text</label>
+          <label class="radio-option"><input type="radio" name="contrast-mode" value="dark"> Force dark text</label>
+        </div>
+      </div>
+      <div class="auto-mode-desc">💡 <strong>Auto mode</strong> will automatically<br>switch between light and dark text based on your background brightness.</div>
     </div>
   </div>
 
@@ -486,6 +541,8 @@
       const green = parseInt(document.getElementById("green-teams").value, 10);
       const sessionId = document.getElementById("session-id").value.trim();
       const dotSize = document.querySelector('input[name="dot-size"]:checked')?.value || "S";
+      const dotStyle = document.querySelector('input[name="dot-style"]:checked')?.value || "circle";
+      const contrastMode = document.querySelector('input[name="contrast-mode"]:checked')?.value || "auto";
       const backgroundColor = document.getElementById("background-color").value;
       const fontColor = document.getElementById("font-color").value;
       const fontFamily = document.getElementById("font-family").value;
@@ -499,6 +556,8 @@
           green_teams: green,
           session_id: sessionId || null,
           dot_size: dotSize,
+          dot_style: dotStyle,
+          contrast_mode: contrastMode,
           background_color: backgroundColor,
           font_color: fontColor,
           font_family: fontFamily,
@@ -578,10 +637,170 @@
         e.preventDefault();
         applySettings();
       }
+      if (e.key === "Escape" || e.key === "Esc") {
+        e.preventDefault();
+        window.close();
+      }
+    });
+
+    // Custom seconds input behavior - increment/decrement by 15 seconds
+    document.addEventListener("DOMContentLoaded", () => {
+      const secondsInput = document.getElementById("seconds-input");
+      
+      secondsInput.addEventListener("input", (e) => {
+        // Allow manual keyboard input for any value
+        let value = parseInt(e.target.value, 10) || 0;
+        
+        // Ensure value stays within bounds
+        if (value < 0) value = 0;
+        if (value > 59) value = 59;
+        
+        e.target.value = value;
+      });
+      
+      // Override the default step behavior for arrow buttons
+      secondsInput.addEventListener("mousedown", (e) => {
+        // Check if the click is specifically on the up/down arrow buttons
+        const rect = e.target.getBoundingClientRect();
+        const inputWidth = rect.width;
+        const clickX = e.clientX - rect.left;
+        
+        // Only trigger if click is in the rightmost 20px (where the arrows are)
+        if (clickX > inputWidth - 20) {
+          const isUpArrow = e.clientY < rect.top + rect.height / 2;
+          const isDownArrow = e.clientY > rect.top + rect.height / 2;
+          
+          if (isUpArrow || isDownArrow) {
+            e.preventDefault();
+            
+            let currentValue = parseInt(secondsInput.value, 10) || 0;
+            
+            if (isUpArrow) {
+              // Increment by 15 seconds
+              currentValue += 15;
+              if (currentValue > 59) currentValue = 0; // Wrap around to 0
+            } else {
+              // Decrement by 15 seconds
+              currentValue -= 15;
+              if (currentValue < 0) currentValue = 45; // Wrap around to 45
+            }
+            
+            secondsInput.value = currentValue;
+          }
+        }
+        // If click is not on the arrows, let the normal input behavior work
+      });
     });
 
     function clearSessionId() {
       document.getElementById("session-id").value = "default";
+    }
+
+    let defaultAppearanceValues = null; // Will be loaded from backend
+
+    async function loadDefaultAppearanceValues() {
+      try {
+        // Fetch default session state from backend (this contains the full defaults from Docker image)
+        const response = await fetch('/api/session-state?session=default');
+        if (response.ok) {
+          const defaultState = await response.json();
+          defaultAppearanceValues = {
+            background_color: defaultState.background_color || "#d0f0ff",
+            font_color: defaultState.font_color || "#000000",
+            font_family: defaultState.font_family || "Oswald",
+            background_image: defaultState.background_image || null,
+            dot_size: defaultState.dot_size || "M",
+            dot_style: defaultState.dot_style || "circle"
+          };
+          console.log("Loaded default appearance values:", defaultAppearanceValues);
+        }
+      } catch (err) {
+        console.warn("Failed to load default appearance values:", err);
+        // Fallback to hardcoded values
+        defaultAppearanceValues = {
+          background_color: "#d0f0ff",
+          font_color: "#000000",
+          font_family: "Oswald",
+          background_image: null,
+          dot_size: "M",
+          dot_style: "circle"
+        };
+      }
+    }
+
+    function resetAppearanceToDefault(event) {
+      event.stopPropagation(); // Prevent section toggle
+      
+      // Use dynamically loaded default values
+      const defaultValues = defaultAppearanceValues || {
+        background_color: "#d0f0ff",
+        font_color: "#000000",
+        font_family: "Oswald",
+        background_image: null,
+        dot_size: "M",
+        dot_style: "circle"
+      };
+      
+      // Reset form fields
+      document.getElementById("background-color").value = defaultValues.background_color;
+      document.getElementById("font-color").value = defaultValues.font_color;
+      document.getElementById("font-family").value = defaultValues.font_family;
+      
+      // Reset dot size
+      const dotInput = document.querySelector(`input[name='dot-size'][value='${defaultValues.dot_size}']`);
+      if (dotInput) dotInput.checked = true;
+
+      // Reset dot style
+      const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${defaultValues.dot_style}']`);
+      if (dotStyleInput) dotStyleInput.checked = true;
+      
+      // Reset background image
+      currentBackgroundImage = defaultValues.background_image;
+      document.getElementById("background-filename").textContent = `Default: ${defaultValues.background_image}`;
+      document.getElementById("image-thumbnail").src = `/static/${defaultValues.background_image}`;
+      document.getElementById("image-thumbnail").classList.add("visible");
+      document.getElementById("image-info").textContent = defaultValues.background_image;
+      document.getElementById("image-preview").style.display = "flex";
+      document.getElementById("background-file").value = "";
+      
+      // Show confirmation
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = "✓ Reset";
+      btn.style.background = "#c6f6d5";
+      btn.style.color = "#22543d";
+      btn.style.borderColor = "#9ae6b4";
+      
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.style.borderColor = "";
+      }, 1500);
+    }
+
+    function applyAppearancePreview() {
+      // This function can be called after changing background image/color in the settings
+      const bgImage = currentBackgroundImage;
+      const bgColor = document.getElementById("background-color").value;
+      if (bgImage) {
+        const img = new window.Image();
+        img.onload = function() {
+          document.body.style.backgroundImage = `url('/static/${bgImage}')`;
+          document.body.style.backgroundSize = "cover";
+          document.body.style.backgroundRepeat = "no-repeat";
+          document.body.style.backgroundPosition = "center";
+          document.body.style.backgroundColor = "";
+        };
+        img.onerror = function() {
+          document.body.style.backgroundImage = "none";
+          document.body.style.backgroundColor = bgColor;
+        };
+        img.src = `/static/${bgImage}`;
+      } else {
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = bgColor;
+      }
     }
 
     // Listen for window position message and prefill session ID if provided
@@ -618,6 +837,16 @@
           if (dotInput) dotInput.checked = true;
           prefill.dot_size = true;
         }
+        if (event.data.prefill_dot_style) {
+          const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${event.data.prefill_dot_style}']`);
+          if (dotStyleInput) dotStyleInput.checked = true;
+          prefill.dot_style = true;
+        }
+        if (event.data.prefill_contrast_mode) {
+          const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${event.data.prefill_contrast_mode}']`);
+          if (contrastInput) contrastInput.checked = true;
+          prefill.contrast_mode = true;
+        }
         if (event.data.prefill_background_color) {
           document.getElementById("background-color").value = event.data.prefill_background_color;
           prefill.background_color = true;
@@ -646,6 +875,30 @@
 
     window.addEventListener("DOMContentLoaded", async () => {
       if (!window.opener) return;
+      
+      // Load default appearance values first
+      await loadDefaultAppearanceValues();
+      
+      // Auto-resize window to fit content
+      function doAutoResize() {
+        const bodyHeight = document.documentElement.scrollHeight;
+        window.resizeTo(500, bodyHeight + 60); // Add 60px for browser chrome
+      }
+      setTimeout(doAutoResize, 120);
+      setTimeout(doAutoResize, 300);
+      setTimeout(doAutoResize, 600);
+      setTimeout(doAutoResize, 1000);
+      window.onload = () => doAutoResize();
+      document.querySelectorAll('img').forEach(img => {
+        img.addEventListener('load', doAutoResize);
+      });
+      
+      // Focus and select the minutes input on load
+      const minutesInput = document.getElementById("time-input");
+      if (minutesInput) {
+        minutesInput.focus();
+        minutesInput.select();
+      }
       
       let sessionId = "default";
       try {
@@ -683,6 +936,14 @@
           if (state.dot_size && !prefill.dot_size) {
             const dotInput = document.querySelector(`input[name='dot-size'][value='${state.dot_size}']`);
             if (dotInput) dotInput.checked = true;
+          }
+          if (state.dot_style && !prefill.dot_style) {
+            const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${state.dot_style}']`);
+            if (dotStyleInput) dotStyleInput.checked = true;
+          }
+          if (state.contrast_mode && !prefill.contrast_mode) {
+            const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${state.contrast_mode}']`);
+            if (contrastInput) contrastInput.checked = true;
           }
           if (state.background_color && !prefill.background_color) {
             document.getElementById("background-color").value = state.background_color;

@@ -122,6 +122,45 @@
     :root {
       --btn-primary: #333;
       --btn-secondary: #666;
+      --text-light: rgba(255, 255, 255, 0.9);
+      --text-dark: rgba(0, 0, 0, 0.9);
+      --text-contrast: rgba(255, 255, 255, 0.9);
+      --button-bg-light: rgba(255, 255, 255, 0.1);
+      --button-bg-dark: rgba(0, 0, 0, 0.1);
+      --button-bg-contrast: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Dynamic contrast classes */
+    .contrast-light {
+      color: var(--text-dark) !important;
+    }
+
+    .contrast-dark {
+      color: var(--text-light) !important;
+    }
+
+    .button-contrast-light {
+      background: var(--button-bg-dark) !important;
+      color: var(--text-dark) !important;
+      border-color: rgba(0, 0, 0, 0.3) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .button-contrast-dark {
+      background: var(--button-bg-light) !important;
+      color: var(--text-light) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .timer-contrast-light {
+      color: var(--text-dark) !important;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .timer-contrast-dark {
+      color: var(--text-light) !important;
+      text-shadow: 0 4px 20px rgba(255, 255, 255, 0.3) !important;
     }
 
     #config-button.icon-only {
@@ -130,12 +169,14 @@
       padding: 0;
       width: auto;
       height: auto;
-      color: var(--btn-primary);
+      color: rgba(255, 255, 255, 0.95);
     }
 
     #config-button.icon-only svg {
       width: 2em;
       height: 2em;
+      color: inherit;
+      stroke: currentColor;
     }
 
     .buttons button {
@@ -147,17 +188,18 @@
       font-weight: 600;
       padding: 12px 24px;
       border-radius: 50px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid var(--button-bg-contrast, rgba(255, 255, 255, 0.3));
+      background: var(--button-bg-contrast, rgba(255, 255, 255, 0.1));
       backdrop-filter: blur(10px);
       cursor: pointer;
       transition: all 0.3s ease;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--text-contrast, rgba(255, 255, 255, 0.9));
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
 
     .buttons button:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: var(--button-bg-contrast, rgba(255, 255, 255, 0.2));
+      opacity: 0.8;
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
@@ -208,19 +250,20 @@
       height: 60px;
       padding: 0;
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      border: 2px solid var(--button-bg-contrast, rgba(255, 255, 255, 0.3));
       font-size: 1.1rem;
       font-weight: 600;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--button-bg-contrast, rgba(255, 255, 255, 0.1));
       backdrop-filter: blur(10px);
       cursor: pointer;
       transition: all 0.3s ease;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--text-contrast, rgba(255, 255, 255, 0.9));
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
 
     .round:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: var(--button-bg-contrast, rgba(255, 255, 255, 0.2));
+      opacity: 0.8;
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
@@ -242,8 +285,14 @@
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.2);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      color: var(--text-contrast, rgba(255,255,255,0.9));
     }
-
+    .qr-section.contrast-light {
+      color: var(--text-dark) !important;
+    }
+    .qr-section.contrast-dark {
+      color: var(--text-light) !important;
+    }
     .qr-section img {
       width: 140px;
       height: 140px;
@@ -258,22 +307,24 @@
 
     .qr-label {
       font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.7);
+      color: inherit !important;
       opacity: 0.8;
       text-align: center;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.18);
     }
 
     #session-indicator {
       font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.9);
+      color: inherit !important;
       text-decoration: underline;
       cursor: pointer;
       transition: color 0.3s ease;
       font-weight: 500;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.18);
     }
 
     #session-indicator:hover {
-      color: white;
+      color: white !important;
     }
 
     @keyframes flash {
@@ -349,6 +400,23 @@
       .timer-display {
         font-size: clamp(3rem, 30vw, 12rem);
       }
+    }
+    .dot-img {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.3s ease;
+      object-fit: cover;
+      display: block;
+      background: none;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    }
+
+    .dot-img:hover {
+      transform: scale(1.1);
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+      border-color: rgba(255, 255, 255, 0.5);
     }
   </style>
 </head>
@@ -451,7 +519,9 @@
       font_color: "#000000",
       font_family: "Courier New",
       background_image: null,
-      custom_font_color_set: false
+      custom_font_color_set: false,
+      dot_style: "circle", // Added dot_style
+      contrast_mode: "auto" // Added contrast_mode
     };
 
     // ─── UI state ───
@@ -459,6 +529,7 @@
     let intervalId = null;
     let lastSeenCount = 0;
     let wasTimerRunning = false; // Track if timer was running when reset was clicked
+    let initialScanCountLoaded = false;
 
     // ─── DOM elements ───
     const optionsBtn = document.getElementById("options-button");
@@ -504,6 +575,13 @@
       timerDisplay.textContent = formatTime(mins, secs);
     }
 
+    function setToggleButtonToStart() {
+      toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
+      toggleBtn.classList.remove("primary-active");
+      toggleBtn.classList.add("primary-idle");
+      toggleBtn.disabled = false;
+    }
+
     // ─── Core functions ───
     function createDots(count, color, size) {
       console.log(`🎯 Creating ${count} ${color} dots with size: ${size}`);
@@ -514,40 +592,211 @@
       const numCount = parseInt(count, 10) || 0;
       if (numCount <= 0) return;
 
-      const dotSizeMap = { S: 1.0, M: 1.5, L: 1.875, XL: 2.5 };
-      const scale = dotSizeMap[size] || 1.0;
-      const px = `${Math.round(16 * scale)}px`;
+      const dotSizeMap = { S: 16, M: 30, L: 50, XL: 80 };
+      const px = `${dotSizeMap[size] || 16}px`;
       
-      console.log(`🎯 Dot size map: ${size} → ${scale} → ${px}`);
-
+      const useDatadog = sessionState.dot_style === "datadog";
       for (let i = 0; i < numCount; i++) {
-        const dot = document.createElement("div");
-        dot.classList.add("dot", color);
-        dot.style.setProperty("width", px, "important");
-        dot.style.setProperty("height", px, "important");
-        container.appendChild(dot);
-        
-        // Debug: Check if the size was actually applied
-        setTimeout(() => {
-          const computedStyle = window.getComputedStyle(dot);
-          console.log(`🎯 Dot ${i} computed size: ${computedStyle.width} x ${computedStyle.height}`);
-        }, 100);
+        if (useDatadog) {
+          const img = document.createElement("img");
+          img.className = "dot-img";
+          img.src = color === "red" ? "/static/datadog_red.gif" : "/static/datadog_green.gif";
+          img.style.width = px;
+          img.style.height = px;
+          container.appendChild(img);
+        } else {
+          const dot = document.createElement("div");
+          dot.classList.add("dot", color);
+          dot.style.setProperty("width", px, "important");
+          dot.style.setProperty("height", px, "important");
+          container.appendChild(dot);
+        }
       }
       
-      console.log(`🎯 Created ${numCount} ${color} dots with size ${px}`);
+      console.log(`🎯 Created ${numCount} ${color} dots with size ${px} (${useDatadog ? 'Datadog' : 'circle'})`);
+    }
+
+    // ─── Dynamic Contrast Detection ───
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    }
+
+    function calculateBrightness(r, g, b) {
+      // Using luminance formula: 0.299*R + 0.587*G + 0.114*B
+      return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    }
+
+    function analyzeImageBrightness(imageSrc) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          // Draw image to canvas
+          ctx.drawImage(img, 0, 0);
+          
+          // Sample pixels from the image
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          let totalBrightness = 0;
+          let sampleCount = 0;
+          
+          // Sample every 10th pixel for performance
+          for (let i = 0; i < data.length; i += 40) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            totalBrightness += calculateBrightness(r, g, b);
+            sampleCount++;
+          }
+          
+          const averageBrightness = totalBrightness / sampleCount;
+          resolve(averageBrightness > 0.6);
+        };
+        
+        img.onerror = function() {
+          // Fallback to heuristic analysis
+          const lightImageKeywords = ['white', 'light', 'bright', 'cannes', 'timer-bg'];
+          const imageName = sessionState.background_image.toLowerCase();
+          resolve(lightImageKeywords.some(keyword => imageName.includes(keyword)));
+        };
+        
+        img.src = imageSrc;
+      });
+    }
+
+    async function isBackgroundLight() {
+      // Check if we have a background image
+      if (sessionState.background_image) {
+        // Always treat these images as 'dark' (use white text)
+        const alwaysDarkImages = [
+          'BH7K8K_cannes_new_1751654344.png',
+          'cannes_new.png',
+          'timer-bg.png'
+        ];
+        if (alwaysDarkImages.includes(sessionState.background_image)) {
+          return false; // Always use white text for these images
+        }
+        try {
+          const imageSrc = `/static/${sessionState.background_image}`;
+          return await analyzeImageBrightness(imageSrc);
+        } catch (error) {
+          // Fallback to heuristic analysis
+          const lightImageKeywords = ['white', 'light', 'bright'];
+          const imageName = sessionState.background_image.toLowerCase();
+          return lightImageKeywords.some(keyword => imageName.includes(keyword));
+        }
+      }
+      // For solid colors, calculate brightness
+      if (sessionState.background_color) {
+        const rgb = hexToRgb(sessionState.background_color);
+        if (rgb) {
+          const brightness = calculateBrightness(rgb.r, rgb.g, rgb.b);
+          return brightness > 0.6; // Threshold for "light" background
+        }
+      }
+      return false; // Default to dark
+    }
+
+    async function applyDynamicContrast() {
+      let isLight;
+      let forceMode = null;
+      // Check contrast mode setting
+      switch (sessionState.contrast_mode) {
+        case "light":
+          forceMode = "light"; // Force light text (white)
+          break;
+        case "dark":
+          forceMode = "dark"; // Force dark text (black)
+          break;
+        case "auto":
+        default:
+          isLight = await isBackgroundLight();
+          break;
+      }
+      // Update CSS custom properties and classes
+      if (forceMode === "light") {
+        document.documentElement.style.setProperty('--text-contrast', 'rgba(255, 255, 255, 0.9)');
+        document.documentElement.style.setProperty('--button-bg-contrast', 'rgba(255, 255, 255, 0.1)');
+      } else if (forceMode === "dark") {
+        document.documentElement.style.setProperty('--text-contrast', 'rgba(0, 0, 0, 0.9)');
+        document.documentElement.style.setProperty('--button-bg-contrast', 'rgba(0, 0, 0, 0.1)');
+      } else if (typeof isLight !== 'undefined') {
+        if (isLight) {
+          document.documentElement.style.setProperty('--text-contrast', 'rgba(0, 0, 0, 0.9)');
+          document.documentElement.style.setProperty('--button-bg-contrast', 'rgba(0, 0, 0, 0.1)');
+        } else {
+          document.documentElement.style.setProperty('--text-contrast', 'rgba(255, 255, 255, 0.9)');
+          document.documentElement.style.setProperty('--button-bg-contrast', 'rgba(255, 255, 255, 0.1)');
+        }
+      }
+      // Determine which class to apply
+      let contrastClass = '';
+      if (forceMode === "light") contrastClass = 'contrast-dark';
+      else if (forceMode === "dark") contrastClass = 'contrast-light';
+      else contrastClass = isLight ? 'contrast-light' : 'contrast-dark';
+      // Apply contrast classes to elements
+      const elements = document.querySelectorAll('.buttons button, .round, #config-button');
+      elements.forEach(el => {
+        el.classList.remove('button-contrast-light', 'button-contrast-dark');
+        el.classList.add(contrastClass === 'contrast-light' ? 'button-contrast-light' : 'button-contrast-dark');
+      });
+      // Timer display
+      timerDisplay.classList.remove('timer-contrast-light', 'timer-contrast-dark');
+      if (sessionState.font_color === "#000000" && !sessionState.custom_font_color_set) {
+        timerDisplay.classList.add(contrastClass === 'contrast-light' ? 'timer-contrast-light' : 'timer-contrast-dark');
+      }
+      // QR section
+      const qrSection = document.querySelector(".qr-section");
+      qrSection.classList.remove('contrast-light', 'contrast-dark');
+      qrSection.classList.add(contrastClass);
+      // Session indicator
+      const sessionIndicator = document.getElementById("session-indicator");
+      sessionIndicator.classList.remove('contrast-light', 'contrast-dark');
+      sessionIndicator.classList.add(contrastClass);
+      // QR label
+      const qrLabel = document.querySelector(".qr-label");
+      qrLabel.classList.remove('contrast-light', 'contrast-dark');
+      qrLabel.classList.add(contrastClass);
+      console.log(`🎨 Applied contrast mode: ${sessionState.contrast_mode} (${contrastClass})`);
     }
 
     function applyAppearance() {
       // Background
       if (sessionState.background_image) {
-        document.body.style.backgroundImage = `url("/static/${sessionState.background_image}")`;
-        document.body.style.backgroundSize = "cover";
-        document.body.style.backgroundRepeat = "no-repeat";
-        document.body.style.backgroundPosition = "center";
-        document.body.style.backgroundColor = "";
+        // Failsafe: check if image exists
+        const img = new window.Image();
+        img.onload = function() {
+          document.body.style.backgroundImage = `url("/static/${sessionState.background_image}")`;
+          document.body.style.backgroundSize = "cover";
+          document.body.style.backgroundRepeat = "no-repeat";
+          document.body.style.backgroundPosition = "center";
+          document.body.style.backgroundColor = "";
+          // Apply dynamic contrast after background is set
+          setTimeout(applyDynamicContrast, 100);
+        };
+        img.onerror = function() {
+          document.body.style.backgroundImage = "none";
+          document.body.style.backgroundColor = sessionState.background_color;
+          // Apply dynamic contrast after background is set
+          setTimeout(applyDynamicContrast, 100);
+        };
+        img.src = `/static/${sessionState.background_image}`;
       } else {
         document.body.style.backgroundImage = "none";
         document.body.style.backgroundColor = sessionState.background_color;
+        // Apply dynamic contrast after background is set
+        setTimeout(applyDynamicContrast, 100);
       }
 
       // Font
@@ -589,6 +838,11 @@
     function applySettings(data) {
       console.log("🔧 Applying settings:", data);
       
+      // Store current dot state before applying new settings
+      const currentRedDots = document.querySelectorAll("#left-dots .dot.red, #left-dots img.dot-img").length;
+      const currentGreenDots = document.querySelectorAll("#right-dots .dot.green, #right-dots img.dot-img").length;
+      const wasTimerRunning = intervalId !== null;
+      
       // Convert string values to numbers and update session state
       const processedData = {
         ...data,
@@ -597,6 +851,8 @@
         teams: parseInt(data.teams, 10) || 0,
         green_teams: parseInt(data.green_teams, 10) || 0,
         dot_size: data.dot_size || "S",  // Ensure dot_size is preserved
+        dot_style: data.dot_style || "circle", // Ensure dot_style is preserved
+        contrast_mode: data.contrast_mode || "auto", // Ensure contrast_mode is preserved
         custom_font_color_set: true  // Mark that a custom font color has been set
       };
       
@@ -607,8 +863,26 @@
       // Apply changes
       applyAppearance();
       applyTimer();
-      createDots(sessionState.teams, "red", sessionState.dot_size);
-      createDots(sessionState.green_teams, "green", sessionState.dot_size);
+      
+      // Recreate dots but preserve the current state
+      const remainingRedDots = Math.max(0, sessionState.teams - currentGreenDots);
+      const actualGreenDots = Math.min(currentGreenDots, sessionState.teams);
+      
+      createDots(remainingRedDots, "red", sessionState.dot_size);
+      createDots(actualGreenDots, "green", sessionState.dot_size);
+      
+      // Update lastSeenCount to match current green dots
+      lastSeenCount = actualGreenDots;
+      
+      // Set button state correctly based on timer state
+      if (wasTimerRunning && totalSeconds > 0) {
+        // Timer was running, keep it running and show Stop button
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z"/></svg> Stop`;
+        toggleBtn.classList.remove("primary-idle");
+        toggleBtn.classList.add("primary-active");
+      } else {
+        setToggleButtonToStart();
+      }
       
       // Update session indicator
       if (data.session_id) {
@@ -621,10 +895,7 @@
         if (qrImg) qrImg.src = `/qr-image?session=${encodeURIComponent(data.session_id)}`;
       }
       
-      // Reset scan count and reset stage
-      lastSeenCount = 0;
-      resetStage = 0; // Reset stage when new settings are applied
-      console.log("🔧 Settings applied - Reset stage set to 0");
+      console.log("🔧 Settings applied - Preserved dot state: red=" + remainingRedDots + ", green=" + actualGreenDots);
       const currentSession = getCurrentSession();
       fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
     }
@@ -656,8 +927,15 @@
             createDots(sessionState.green_teams, "green", sessionState.dot_size);
           }
         }
+        // After loading session state, also fetch current scan count
+        const pingResp = await fetch(`/ping?session=${encodeURIComponent(session)}`);
+        if (pingResp.ok) {
+          const count = parseInt(await pingResp.text(), 10);
+          lastSeenCount = count;
+          initialScanCountLoaded = true;
+        }
       } catch (err) {
-        console.warn("Could not load session state:", err);
+        console.warn("Could not load session state or scan count:", err);
       }
     }
 
@@ -685,6 +963,10 @@
     optionsBtn.onclick = openSettings;
 
     toggleBtn.addEventListener("click", () => {
+      if (toggleBtn.onclick === openSettings) {
+        openSettings();
+        return;
+      }
       if (totalSeconds === 0 && sessionState.teams === 0 && sessionState.green_teams === 0) {
         openSettings();
         return;
@@ -723,7 +1005,7 @@
       }
     });
 
-    resetBtn.addEventListener("click", () => {
+    resetBtn.addEventListener("click", async () => {
       wasTimerRunning = intervalId !== null;
       clearInterval(intervalId);
       intervalId = null;
@@ -753,6 +1035,9 @@
         optionsBtn.classList.add("hidden");
         resetBtn.classList.add("hidden");
         updateButtonsLayout();
+        
+        // Save the reset state to backend
+        await saveSessionState();
       } else {
         // Restore to last set value
         totalSeconds = setSeconds;
@@ -796,13 +1081,14 @@
         sessionStorage.setItem("session", newId);
       }
       
-      const btnRect = optionsBtn.getBoundingClientRect();
+      // Get the Start button position for centering
+      const startBtnRect = toggleBtn.getBoundingClientRect();
       const width = 500;
-      const height = 400;
-      const left = window.screenX + btnRect.left;
-      const top = window.screenY + btnRect.bottom + 10;
+      const initialHeight = 350;
+      const left = window.screenX + startBtnRect.left + (startBtnRect.width - width) / 2;
+      const top = window.screenY + startBtnRect.top - 50; // Position above the Start button
 
-      const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
+      const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${initialHeight},left=${left},top=${top},resizable=yes,scrollbars=yes`);
       const currentSession = getCurrentSession();
 
       // Always send the current timer value (totalSeconds)
@@ -823,7 +1109,9 @@
           prefill_background_color: sessionState.background_color,
           prefill_font_color: sessionState.font_color,
           prefill_font_family: sessionState.font_family,
-          prefill_background_image: sessionState.background_image
+          prefill_background_image: sessionState.background_image,
+          prefill_dot_style: sessionState.dot_style, // Pass dot_style
+          prefill_contrast_mode: sessionState.contrast_mode // Pass contrast_mode
         }, "*");
       });
     }
@@ -852,13 +1140,23 @@
     // ─── Dot flight animation ───
     function animateDotFlight(redDot) {
       if (window.matchMedia("(max-width: 600px)").matches) {
-        redDot.classList.replace("red", "green");
-        // Preserve the dot size when moving to mobile
-        const currentWidth = redDot.style.width || "16px";
-        const currentHeight = redDot.style.height || "16px";
-        redDot.style.setProperty("width", currentWidth, "important");
-        redDot.style.setProperty("height", currentHeight, "important");
-        document.getElementById("right-dots").appendChild(redDot);
+        if (sessionState.dot_style === "datadog") {
+          redDot.src = "/static/datadog_green.gif";
+          document.getElementById("right-dots").appendChild(redDot);
+        } else {
+          redDot.classList.replace("red", "green");
+          // Preserve the dot size when moving to mobile
+          const currentWidth = redDot.style.width || "16px";
+          const currentHeight = redDot.style.height || "16px";
+          redDot.style.setProperty("width", currentWidth, "important");
+          redDot.style.setProperty("height", currentHeight, "important");
+          document.getElementById("right-dots").appendChild(redDot);
+        }
+        // Check if this was the last red dot
+        const selector = sessionState.dot_style === "datadog" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
+        if (document.querySelectorAll(selector).length === 0) {
+          showFinishState();
+        }
         return;
       }
 
@@ -866,17 +1164,31 @@
       const rightCol = document.getElementById("right-dots");
       const endRect = rightCol.getBoundingClientRect();
 
-      const clone = redDot.cloneNode(false);
-      clone.style.position = "fixed";
-      clone.style.left = `${startRect.left}px`;
-      clone.style.top = `${startRect.top}px`;
-      clone.style.width = `${startRect.width}px`;
-      clone.style.height = `${startRect.height}px`;
-      clone.style.borderRadius = "50%";
-      clone.style.backgroundColor = "red";
-      clone.style.zIndex = 9999;
-      clone.style.willChange = "transform, background-color";
-      document.body.appendChild(clone);
+      let clone;
+      if (sessionState.dot_style === "datadog") {
+        clone = redDot.cloneNode(false);
+        clone.style.position = "fixed";
+        clone.style.left = `${startRect.left}px`;
+        clone.style.top = `${startRect.top}px`;
+        clone.style.width = `${startRect.width}px`;
+        clone.style.height = `${startRect.height}px`;
+        clone.style.borderRadius = "50%";
+        clone.style.zIndex = 9999;
+        clone.style.willChange = "transform";
+        document.body.appendChild(clone);
+      } else {
+        clone = redDot.cloneNode(false);
+        clone.style.position = "fixed";
+        clone.style.left = `${startRect.left}px`;
+        clone.style.top = `${startRect.top}px`;
+        clone.style.width = `${startRect.width}px`;
+        clone.style.height = `${startRect.height}px`;
+        clone.style.borderRadius = "50%";
+        clone.style.backgroundColor = "red";
+        clone.style.zIndex = 9999;
+        clone.style.willChange = "transform, background-color";
+        document.body.appendChild(clone);
+      }
 
       redDot.remove();
 
@@ -902,42 +1214,74 @@
       setTimeout(() => {
         clone.style.transition = "transform 0.5s ease-in, background-color 0.2s linear";
         clone.style.transform = tr(acrossDistance, upDistance + downDistance);
-        clone.style.backgroundColor = "green";
+        if (sessionState.dot_style === "datadog") {
+          clone.src = "/static/datadog_green.gif";
+        } else {
+          clone.style.backgroundColor = "green";
+        }
       }, 1400);
 
       setTimeout(() => {
-        const newDot = document.createElement("div");
-        newDot.classList.add("dot", "green");
-        newDot.style.setProperty("width", clone.style.width, "important");
-        newDot.style.setProperty("height", clone.style.height, "important");
-        rightCol.appendChild(newDot);
+        if (sessionState.dot_style === "datadog") {
+          const newImg = document.createElement("img");
+          newImg.className = "dot-img";
+          newImg.src = "/static/datadog_green.gif";
+          newImg.style.width = clone.style.width;
+          newImg.style.height = clone.style.height;
+          rightCol.appendChild(newImg);
+        } else {
+          const newDot = document.createElement("div");
+          newDot.classList.add("dot", "green");
+          newDot.style.setProperty("width", clone.style.width, "important");
+          newDot.style.setProperty("height", clone.style.height, "important");
+          rightCol.appendChild(newDot);
+        }
         clone.remove();
+        // Check if this was the last red dot, but delay flag for animation finish
+        const selector = sessionState.dot_style === "datadog" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
+        if (document.querySelectorAll(selector).length === 0) {
+          setTimeout(showFinishState, 100); // Delay flag for animation
+        }
       }, 1950);
+    }
+
+    function showFinishState() {
+      clearInterval(intervalId);
+      intervalId = null;
+      timerDisplay.textContent = "🏁";
+      timerDisplay.style.color = "green";
+      timerDisplay.style.fontWeight = "bold";
+      timerDisplay.classList.remove("flashing-red");
+      setToggleButtonToStart(); // Always set to Start in finished state
+      // Make Start button open settings
+      toggleBtn.onclick = openSettings;
+      resetBtn.disabled = false;
     }
 
     async function checkForNewScans() {
       try {
+        if (!initialScanCountLoaded) return; // Don't animate until initial count is loaded
         const currentSession = getCurrentSession();
         const res = await fetch(`/ping?session=${encodeURIComponent(currentSession)}`);
         const count = parseInt(await res.text(), 10);
         if (count > lastSeenCount) {
-          const redDot = document.querySelector("#left-dots .dot.red");
+          let redDot;
+          if (sessionState.dot_style === "datadog") {
+            redDot = document.querySelector("#left-dots img.dot-img");
+          } else {
+            redDot = document.querySelector("#left-dots .dot.red");
+          }
           if (redDot) {
             animateDotFlight(redDot);
             lastSeenCount = count;
           }
         }
-        const remainingRedDots = document.querySelectorAll("#left-dots .dot.red").length;
-        if (remainingRedDots === 0 && lastSeenCount > 0) {
-          clearInterval(intervalId);
-          intervalId = null;
-          timerDisplay.textContent = "🏁";
-          timerDisplay.style.color = "green";
-          timerDisplay.style.fontWeight = "bold";
-          timerDisplay.classList.remove("flashing-red");
-          toggleBtn.disabled = true;
-          resetBtn.disabled = false;
-        }
+        // Remove finish state logic from here
+        // const remainingRedDots = document.querySelectorAll("#left-dots .dot.red").length;
+        // if (remainingRedDots === 0 && lastSeenCount > 0) {
+        //   ...
+        // }
+        // else { ... }
       } catch (err) {
         console.error("Error pinging for scans:", err);
       }

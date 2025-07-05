@@ -22,21 +22,30 @@
     "background_color": "#d0f0ff",
     "font_color": "#000000",
     "font_family": "Arial",
-    "background_image": "JG600Y_cannes_new_1751643221.png"
+    "background_image": "cannes.png"
   },
   "default": {
     "minutes": 0,
     "seconds": 0,
     "teams": 0,
     "green_teams": 0,
-    "dot_size": "M",
+    "dot_size": "L",
     "background_color": "#d0f0ff",
     "font_color": "#000000",
     "font_family": "Oswald",
-    "background_image": "BH7K8K_cannes_new_1751654344.png",
+    "background_image": "cannes.png",
     "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "contrast_mode": "light",
+    "session_id": "default",
     "type": "settings",
-    "session_id": "default"
+    "ui": {
+      "background_color": "#b36ab4",
+      "background_image": null,
+      "dot_size": "S",
+      "font_color": "#000000",
+      "font_family": "Oswald"
+    }
   },
   "2UX358": {
     "minutes": 3,
@@ -117,5 +126,119 @@
     "custom_font_color_set": true,
     "type": "settings",
     "session_id": "BH7K8K"
+  },
+  "lab9999": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 0,
+    "green_teams": 0,
+    "dot_size": "L",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "BH7K8K_cannes_new_1751654344.png",
+    "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "session_id": "lab9999",
+    "type": "settings",
+    "ui": {
+      "background_color": "#b36ab4",
+      "background_image": null,
+      "dot_size": "S",
+      "font_color": "#000000",
+      "font_family": "Oswald"
+    }
+  },
+  "D2MZFH": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 0,
+    "green_teams": 0,
+    "dot_size": "L",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "D2MZFH_cannes_1751711066.png",
+    "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "contrast_mode": "light",
+    "session_id": "D2MZFH",
+    "type": "settings",
+    "ui": {
+      "background_color": "#b36ab4",
+      "background_image": null,
+      "dot_size": "S",
+      "font_color": "#000000",
+      "font_family": "Oswald"
+    }
+  },
+  "3RLA47": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 0,
+    "green_teams": 0,
+    "dot_size": "L",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "cannes.png",
+    "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "contrast_mode": "light",
+    "session_id": "3RLA47",
+    "type": "settings",
+    "ui": {
+      "background_color": "#b36ab4",
+      "background_image": null,
+      "dot_size": "S",
+      "font_color": "#000000",
+      "font_family": "Oswald"
+    }
+  },
+  "SVPWGG": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 0,
+    "green_teams": 0,
+    "dot_size": "L",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "cannes.png",
+    "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "contrast_mode": "light",
+    "session_id": "3RLA47",
+    "type": "settings",
+    "ui": {
+      "background_color": "#b36ab4",
+      "background_image": null,
+      "dot_size": "S",
+      "font_color": "#000000",
+      "font_family": "Oswald"
+    }
+  },
+  "6CI2DW": {
+    "minutes": 0,
+    "seconds": 0,
+    "teams": 0,
+    "green_teams": 0,
+    "dot_size": "L",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "cannes.png",
+    "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "contrast_mode": "light",
+    "session_id": "3RLA47",
+    "type": "settings",
+    "ui": {
+      "background_color": "#b36ab4",
+      "background_image": null,
+      "dot_size": "S",
+      "font_color": "#000000",
+      "font_family": "Oswald"
+    }
   }
 }

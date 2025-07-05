@@ -51,25 +51,8 @@ sessions = defaultdict(lambda: {"count": 0, "last_ping": datetime.now()})
 main = Blueprint("main", __name__)
 
 # Admin‑only one‑shot flag that allows an intentional write on “default”
-ALLOW_DEFAULT_WRITE = False
 # ─────────────────────────────────────────────────────────────
 ADMIN_CLEAR_PASSWORD = "3.1415!"   # reuse same password
-
-@main.route("/unlock-default", methods=["POST"])
-def unlock_default():
-    """
-    One‑shot admin call that sets ALLOW_DEFAULT_WRITE = True
-    so the very next POST /edit-config?session=default
-    really writes to config.json.
-    """
-    data = request.get_json(silent=True) or {}
-    pwd = data.get("pwd", "")
-    if pwd != ADMIN_CLEAR_PASSWORD:
-        # Wrong password → 403
-        abort(403)
-    global ALLOW_DEFAULT_WRITE
-    ALLOW_DEFAULT_WRITE = True
-    return "OK", 200
 
 
 # ───────────────────────────────────────────────────────────────────────
@@ -98,18 +81,6 @@ def edit_config():
     if request.method == "POST":
         session_id = request.args.get("session", "default")
 
-        # ── 1) If user is trying to edit *default* but admin flag not set → fork
-        global ALLOW_DEFAULT_WRITE
-        if session_id == "default" and not ALLOW_DEFAULT_WRITE:
-            # Generate 6‑char mixed ID
-            new_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-            session_id = new_id
-            switch_script = True
-        else:
-            switch_script = False
-            # Reset the admin override after a legitimate default save
-            ALLOW_DEFAULT_WRITE = False
-
         raw_json = request.form.get("config_json", "").strip()
         try:
             parsed = json.loads(raw_json)
@@ -122,10 +93,7 @@ def edit_config():
         _save_all_session_states(all_states)
 
         # Respond with JSON so the fetch() in edit‑config.html can act on it
-        if switch_script:   # we forked into new_id
-            return jsonify({"new_session": session_id}), 200
-        else:
-            return jsonify({"new_session": None}), 200
+        return jsonify({"new_session": None}), 200
 
     # ─────────────────── If GET → render form with current JSON ───────────────────
     session_id = request.args.get("session", "default")
@@ -289,16 +257,6 @@ def qr_image():
 
 # ───────────────────────────────────────────────────────────────────────
 # Endpoint to clear all sessions and configs (admin-only operation)
-@main.route("/clear-sessions", methods=["POST"])
-def clear_sessions():
-    """
-    Clears all in-memory session configs and scan counts.
-    """
-    session_configs.clear()
-    sessions.clear()
-    return "OK", 200
-
-
 @main.route("/upload-background", methods=["POST"])
 def upload_background():
     session = request.args.get("session", "default")
