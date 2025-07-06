@@ -492,7 +492,7 @@
           </span>
         </div>
 
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.6</div>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.6 dev</div>
       </div>
     </div>
 
@@ -554,7 +554,11 @@
 
     function updateAddressBar(session) {
       const url = new URL(window.location);
-      url.searchParams.set("session", session);
+      if (!session || session === "default") {
+        url.searchParams.delete("session");
+      } else {
+        url.searchParams.set("session", session);
+      }
       window.history.replaceState(null, "", url);
     }
 
@@ -956,6 +960,17 @@
         applySettings(event.data);
         await saveSessionState();
         console.log("✔️ Settings applied and saved");
+
+        const sessionIndicator = document.getElementById("session-indicator");
+        if (!event.data.session_id || event.data.session_id === "default") {
+          sessionIndicator.textContent = "Session ID:";
+          sessionStorage.removeItem("session");
+          updateAddressBar("");
+        } else {
+          sessionIndicator.textContent = `Session ID: ${event.data.session_id}`;
+          sessionStorage.setItem("session", event.data.session_id);
+          updateAddressBar(event.data.session_id);
+        }
       }
     });
 
@@ -1288,20 +1303,28 @@
     }
 
     // ─── Initialize ───
+    function updateSessionIndicator() {
+      const session = sessionStorage.getItem("session") || "";
+      const sessionIndicator = document.getElementById("session-indicator");
+      if (session && session !== "default") {
+        sessionIndicator.textContent = `Session ID: ${session}`;
+      } else {
+        sessionIndicator.textContent = "Session ID:";
+      }
+    }
+
     window.addEventListener("DOMContentLoaded", async () => {
       // Load session state
       await loadSessionState();
       
       // Initialize session indicator
-      const sessionIndicator = document.getElementById("session-indicator");
-      const stored = sessionStorage.getItem("session") || "default";
-      sessionIndicator.textContent = `Session ID: ${stored}`;
-      updateAddressBar(stored);
+      updateSessionIndicator();
+      updateAddressBar(sessionStorage.getItem("session"));
       
       // Initialize QR
       const qrImg = document.querySelector(".qr-section img");
       if (qrImg) {
-        qrImg.src = stored && stored !== "default" ? `/qr-image?session=${encodeURIComponent(stored)}` : "/qr-image";
+        qrImg.src = sessionStorage.getItem("session") && sessionStorage.getItem("session") !== "default" ? `/qr-image?session=${encodeURIComponent(sessionStorage.getItem("session"))}` : "/qr-image";
       }
       
       updateButtonsLayout();
