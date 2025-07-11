@@ -507,12 +507,23 @@
       <div class="input-group">
         <label>Session ID:</label>
         <div class="input-group-wide">
-          <input type="text" id="session-id" placeholder="e.g. PatrickLab1" />
-          <button class="clear-btn" onclick="clearSessionId()">Clear</button>
+          <input type="text" id="session-id" />
         </div>
       </div>
+      <div style="margin: 8px 0 0 0; display: flex; gap: 18px; align-items: center;">
+        <a href="#" id="delete-session-link" style="color:#2563eb; text-decoration:underline; font-size:13px;" onclick="showDeleteSessionModal(event)">Delete this session and its settings</a>
+        <a href="#" id="copy-session-link" style="color:#2563eb; text-decoration:underline; font-size:13px;" onclick="copySessionUrl(event)">Copy full session URL</a>
+      </div>
+      <div id="delete-session-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:8px; padding:24px 32px; box-shadow:0 4px 24px rgba(0,0,0,0.15); min-width:280px; text-align:center;">
+          <div style="font-size:16px; font-weight:600; margin-bottom:12px;">Are you sure? Cannot be undone.</div>
+          <button onclick="confirmDeleteSession()" style="background:#e53e3e; color:white; border:none; border-radius:4px; padding:6px 18px; margin-right:10px;">Yes</button>
+          <button onclick="hideDeleteSessionModal()" style="background:#e2e8f0; color:#2d3748; border:none; border-radius:4px; padding:6px 18px;">Cancel</button>
+        </div>
+      </div>
+      <div id="session-toast" style="display:none; position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#2d3748; color:white; padding:10px 24px; border-radius:6px; font-size:13px; z-index:10000;"></div>
       <div class="session-help">
-        Use a memorable session ID like "patrick123", "TeamGreen", or "Lab_jmx". This becomes your session key for all backend calls, QR codes, and dot counts.
+        You can save session parameters (countdown, background image, dots, font color, etc.) with a memorable name, for instance TeamGreen25. Access your session directly using a shortcut (e.g., in Slack or Slides) like: https://facilitator-timer-app.onrender.com/?session=TeamGreen25
       </div>
     </div>
   </div>
@@ -534,12 +545,108 @@
       }
     }
 
+    async function fetchAndPrefillSessionState() {
+      let sessionId = document.getElementById('session-id').value.trim();
+      if (!sessionId) {
+        sessionId = sessionStorage.getItem('session') || '';
+      }
+      if (!sessionId) return;
+      try {
+        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(sessionId)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data) {
+            document.getElementById('time-input').value = data.minutes || 0;
+            document.getElementById('seconds-input').value = data.seconds || 0;
+            document.getElementById('red-teams').value = data.red_teams || 0;
+            document.getElementById('green-teams').value = data.green_teams || 0;
+            if (data.dot_size) {
+              const dotInput = document.querySelector(`input[name='dot-size'][value='${data.dot_size}']`);
+              if (dotInput) dotInput.checked = true;
+            }
+            if (data.dot_style) {
+              const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${data.dot_style}']`);
+              if (dotStyleInput) dotStyleInput.checked = true;
+            }
+            if (data.contrast_mode) {
+              const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${data.contrast_mode}']`);
+              if (contrastInput) contrastInput.checked = true;
+            }
+            if (data.background_color) document.getElementById('background-color').value = data.background_color;
+            if (data.font_color) document.getElementById('font-color').value = data.font_color;
+            if (data.font_family) document.getElementById('font-family').value = data.font_family;
+          }
+        }
+      } catch (err) {
+        // ignore errors
+      }
+    }
+
+    function generateRandomSessionId() {
+      return 'S' + Math.random().toString(36).substr(2, 8).toUpperCase();
+    }
+
+    function showDeleteSessionModal(e) {
+      e.preventDefault();
+      if (!document.getElementById('session-id').value.trim()) {
+        showSessionToast('No session ID to delete.');
+        return;
+      }
+      document.getElementById('delete-session-modal').style.display = 'flex';
+    }
+    function hideDeleteSessionModal() {
+      document.getElementById('delete-session-modal').style.display = 'none';
+    }
+    async function confirmDeleteSession() {
+      const sessionId = document.getElementById('session-id').value.trim();
+      if (!sessionId) {
+        hideDeleteSessionModal();
+        showSessionToast('No session ID to delete.');
+        return;
+      }
+      try {
+        const resp = await fetch(`/api/delete-session?session=${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+        if (resp.ok) {
+          document.getElementById('session-id').value = '';
+          hideDeleteSessionModal();
+          showSessionToast('Session deleted.');
+        } else {
+          showSessionToast('Failed to delete session.');
+        }
+      } catch {
+        showSessionToast('Error deleting session.');
+      }
+    }
+    function copySessionUrl(e) {
+      e.preventDefault();
+      const sessionId = document.getElementById('session-id').value.trim();
+      if (!sessionId) {
+        showSessionToast('No session ID to copy.');
+        return;
+      }
+      const url = `${window.location.origin}/?session=${encodeURIComponent(sessionId)}`;
+      navigator.clipboard.writeText(url).then(() => {
+        showSessionToast('URL copied!');
+      }, () => {
+        showSessionToast('Failed to copy URL.');
+      });
+    }
+    function showSessionToast(msg) {
+      const toast = document.getElementById('session-toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 1800);
+    }
+
+    // Global flag to track if user wants to reset to default
+    let resetToDefaultFlag = false;
+
     function applySettings() {
       const minutes = parseInt(document.getElementById("time-input").value, 10);
       const seconds = parseInt(document.getElementById("seconds-input").value, 10);
       const red = parseInt(document.getElementById("red-teams").value, 10);
       const green = parseInt(document.getElementById("green-teams").value, 10);
-      const sessionId = document.getElementById("session-id").value.trim();
+      let sessionId = document.getElementById("session-id").value.trim();
       const dotSize = document.querySelector('input[name="dot-size"]:checked')?.value || "S";
       const dotStyle = document.querySelector('input[name="dot-style"]:checked')?.value || "circle";
       const contrastMode = document.querySelector('input[name="contrast-mode"]:checked')?.value || "auto";
@@ -547,14 +654,27 @@
       const fontColor = document.getElementById("font-color").value;
       const fontFamily = document.getElementById("font-family").value;
 
+      // If reset to default flag is set, always clear session ID
+      if (resetToDefaultFlag) {
+        sessionId = "";
+        document.getElementById("session-id").value = "";
+        console.log("🔄 Reset to default flag is set, clearing session ID");
+      } else if (!sessionId) {
+        // If no session ID and not resetting to default, generate one
+        sessionId = generateRandomSessionId();
+        document.getElementById("session-id").value = sessionId;
+        showSessionToast('New session ID generated for your changes.');
+        console.log("🔄 Generated new session ID:", sessionId);
+      }
+
       if (window.opener) {
         window.opener.postMessage({
           type: "settings",
           minutes,
           seconds,
-          teams: red,
+          red_teams: red,
           green_teams: green,
-          session_id: sessionId || null,
+          session_id: sessionId || "",
           dot_size: dotSize,
           dot_style: dotStyle,
           contrast_mode: contrastMode,
@@ -564,7 +684,12 @@
           background_image: currentBackgroundImage
         }, "*");
       }
-
+      // Save session to storage if we have a session ID
+      if (sessionId) {
+        sessionStorage.setItem("session", sessionId);
+      } else {
+        sessionStorage.removeItem("session");
+      }
       window.close();
     }
 
@@ -693,37 +818,46 @@
     });
 
     function clearSessionId() {
-      document.getElementById("session-id").value = "default";
+      document.getElementById("session-id").value = "";
+      updateDeleteButtonVisibility();
     }
 
     let defaultAppearanceValues = null; // Will be loaded from backend
 
     async function loadDefaultAppearanceValues() {
       try {
-        // Fetch default session state from backend (this contains the full defaults from Docker image)
-        const response = await fetch('/api/session-state?session=default');
+        const response = await fetch('/api/golden-standard');
         if (response.ok) {
           const defaultState = await response.json();
           defaultAppearanceValues = {
+            minutes: defaultState.minutes || 0,
+            seconds: defaultState.seconds || 0,
+            red_teams: defaultState.red_teams || 0,
+            green_teams: defaultState.green_teams || 0,
             background_color: defaultState.background_color || "#d0f0ff",
             font_color: defaultState.font_color || "#000000",
             font_family: defaultState.font_family || "Oswald",
             background_image: defaultState.background_image || null,
             dot_size: defaultState.dot_size || "M",
-            dot_style: defaultState.dot_style || "circle"
+            dot_style: defaultState.dot_style || "datadog_bits",
+            contrast_mode: defaultState.contrast_mode || "auto"
           };
           console.log("Loaded default appearance values:", defaultAppearanceValues);
         }
       } catch (err) {
         console.warn("Failed to load default appearance values:", err);
-        // Fallback to hardcoded values
         defaultAppearanceValues = {
+          minutes: 0,
+          seconds: 0,
+          red_teams: 0,
+          green_teams: 0,
           background_color: "#d0f0ff",
           font_color: "#000000",
           font_family: "Oswald",
           background_image: null,
           dot_size: "M",
-          dot_style: "circle"
+          dot_style: "datadog_bits",
+          contrast_mode: "auto"
         };
       }
     }
@@ -731,17 +865,32 @@
     function resetAppearanceToDefault(event) {
       event.stopPropagation(); // Prevent section toggle
       
+      // Set the reset to default flag
+      resetToDefaultFlag = true;
+      console.log("🔄 Reset to default flag set to true");
+      
       // Use dynamically loaded default values
       const defaultValues = defaultAppearanceValues || {
+        minutes: 0,
+        seconds: 0,
+        red_teams: 0,
+        green_teams: 0,
         background_color: "#d0f0ff",
         font_color: "#000000",
         font_family: "Oswald",
         background_image: null,
         dot_size: "M",
-        dot_style: "circle"
+        dot_style: "datadog_bits",
+        contrast_mode: "auto"
       };
       
-      // Reset form fields
+      // Reset timer fields
+      document.getElementById("time-input").value = defaultValues.minutes;
+      document.getElementById("seconds-input").value = defaultValues.seconds;
+      document.getElementById("red-teams").value = defaultValues.red_teams;
+      document.getElementById("green-teams").value = defaultValues.green_teams;
+      
+      // Reset appearance fields
       document.getElementById("background-color").value = defaultValues.background_color;
       document.getElementById("font-color").value = defaultValues.font_color;
       document.getElementById("font-family").value = defaultValues.font_family;
@@ -754,14 +903,43 @@
       const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${defaultValues.dot_style}']`);
       if (dotStyleInput) dotStyleInput.checked = true;
       
-      // Reset background image
+      // Reset contrast mode
+      const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${defaultValues.contrast_mode}']`);
+      if (contrastInput) contrastInput.checked = true;
+      
+      // Reset background image - properly clear any uploaded images
       currentBackgroundImage = defaultValues.background_image;
-      document.getElementById("background-filename").textContent = `Default: ${defaultValues.background_image}`;
-      document.getElementById("image-thumbnail").src = `/static/${defaultValues.background_image}`;
-      document.getElementById("image-thumbnail").classList.add("visible");
-      document.getElementById("image-info").textContent = defaultValues.background_image;
-      document.getElementById("image-preview").style.display = "flex";
+      if (defaultValues.background_image) {
+        document.getElementById("background-filename").textContent = `Default: ${defaultValues.background_image}`;
+        document.getElementById("image-thumbnail").src = `/static/${defaultValues.background_image}`;
+        document.getElementById("image-thumbnail").classList.add("visible");
+        document.getElementById("image-info").textContent = defaultValues.background_image;
+        document.getElementById("image-preview").style.display = "flex";
+      } else {
+        // Clear background image display
+        document.getElementById("background-filename").textContent = "";
+        document.getElementById("image-thumbnail").classList.remove("visible");
+        document.getElementById("image-preview").style.display = "none";
+      }
       document.getElementById("background-file").value = "";
+      
+      // Clear session ID to indicate we're in default mode
+      document.getElementById("session-id").value = "";
+      sessionStorage.removeItem("session");
+      updateDeleteButtonVisibility();
+      
+      // Send reset message to main timer page to clear URL and storage
+      setTimeout(() => {
+        if (window.opener && !window.opener.closed) {
+          console.log("🔄 Sending reset-to-default message to opener");
+          window.opener.postMessage({
+            type: "reset-to-default"
+          }, "*");
+          console.log("🔄 Reset message sent");
+        } else {
+          console.warn("🔄 No opener window found or opener is closed");
+        }
+      }, 100); // Small delay to ensure everything is ready
       
       // Show confirmation
       const btn = event.target;
@@ -824,9 +1002,9 @@
           document.getElementById("seconds-input").value = event.data.prefill_seconds;
           prefill.seconds = true;
         }
-        if (event.data.prefill_teams !== undefined) {
-          document.getElementById("red-teams").value = event.data.prefill_teams;
-          prefill.teams = true;
+        if (event.data.prefill_red_teams !== undefined) {
+          document.getElementById("red-teams").value = event.data.prefill_red_teams;
+          prefill.red_teams = true;
         }
         if (event.data.prefill_green_teams !== undefined) {
           document.getElementById("green-teams").value = event.data.prefill_green_teams;
@@ -873,106 +1051,59 @@
       }
     });
 
-    window.addEventListener("DOMContentLoaded", async () => {
-      if (!window.opener) return;
-      
-      // Load default appearance values first
-      await loadDefaultAppearanceValues();
-      
-      // Auto-resize window to fit content
-      function doAutoResize() {
-        const bodyHeight = document.documentElement.scrollHeight;
-        window.resizeTo(500, bodyHeight + 60); // Add 60px for browser chrome
+    // Function to clear reset flag when user makes changes
+    function clearResetFlag() {
+      if (resetToDefaultFlag) {
+        resetToDefaultFlag = false;
+        console.log("🔄 Reset to default flag cleared due to user modification");
       }
-      setTimeout(doAutoResize, 120);
-      setTimeout(doAutoResize, 300);
-      setTimeout(doAutoResize, 600);
-      setTimeout(doAutoResize, 1000);
-      window.onload = () => doAutoResize();
-      document.querySelectorAll('img').forEach(img => {
-        img.addEventListener('load', doAutoResize);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const sessionInput = document.getElementById("session-id");
+      let session = sessionStorage.getItem("session") || "";
+      const urlSess = new URLSearchParams(window.location.search).get("session");
+      if (urlSess) {
+        session = urlSess;
+        sessionStorage.setItem("session", session);
+      }
+      sessionInput.value = session;
+      fetchAndPrefillSessionState();
+      updateDeleteButtonVisibility();
+      loadDefaultAppearanceValues();
+      
+      // Add event listeners to clear reset flag when user makes changes
+      const inputs = [
+        "time-input", "seconds-input", "red-teams", "green-teams",
+        "background-color", "font-color", "font-family", "background-file"
+      ];
+      
+      inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.addEventListener("input", clearResetFlag);
+          element.addEventListener("change", clearResetFlag);
+        }
       });
       
-      // Focus and select the minutes input on load
-      const minutesInput = document.getElementById("time-input");
-      if (minutesInput) {
-        minutesInput.focus();
-        minutesInput.select();
-      }
-      
-      let sessionId = "default";
-      try {
-        // Try to get session from opener
-        if (window.opener.getCurrentSession) {
-          sessionId = window.opener.getCurrentSession();
-        } else {
-          const sessionIndicator = window.opener.document.getElementById("session-indicator");
-          if (sessionIndicator) {
-            const text = sessionIndicator.textContent;
-            if (text.startsWith("Session ID: ")) {
-              sessionId = text.replace("Session ID: ", "");
-            }
-          }
-        }
-        
-        // Fetch session state
-        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(sessionId)}`);
-        if (resp.ok) {
-          const state = await resp.json();
-          
-          // Prefill all fields from session state
-          if (state.minutes !== undefined && !prefill.minutes) {
-            document.getElementById("time-input").value = state.minutes;
-          }
-          if (state.seconds !== undefined && !prefill.seconds) {
-            document.getElementById("seconds-input").value = state.seconds;
-          }
-          if (state.teams !== undefined && !prefill.teams) {
-            document.getElementById("red-teams").value = state.teams;
-          }
-          if (state.green_teams !== undefined && !prefill.green_teams) {
-            document.getElementById("green-teams").value = state.green_teams;
-          }
-          if (state.dot_size && !prefill.dot_size) {
-            const dotInput = document.querySelector(`input[name='dot-size'][value='${state.dot_size}']`);
-            if (dotInput) dotInput.checked = true;
-          }
-          if (state.dot_style && !prefill.dot_style) {
-            const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${state.dot_style}']`);
-            if (dotStyleInput) dotStyleInput.checked = true;
-          }
-          if (state.contrast_mode && !prefill.contrast_mode) {
-            const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${state.contrast_mode}']`);
-            if (contrastInput) contrastInput.checked = true;
-          }
-          if (state.background_color && !prefill.background_color) {
-            document.getElementById("background-color").value = state.background_color;
-          }
-          if (state.font_color && !prefill.font_color) {
-            document.getElementById("font-color").value = state.font_color;
-          }
-          if (state.font_family && !prefill.font_family) {
-            document.getElementById("font-family").value = state.font_family;
-          }
-          if (state.background_image && !prefill.background_image) {
-            currentBackgroundImage = state.background_image;
-            document.getElementById("background-filename").textContent = `Current: ${state.background_image}`;
-            // Show thumbnail for existing background image
-            const thumbnail = document.getElementById("image-thumbnail");
-            thumbnail.src = `/static/${state.background_image}`;
-            thumbnail.classList.add("visible");
-            document.getElementById("image-info").textContent = state.background_image;
-            document.getElementById("image-preview").style.display = "flex";
-          }
-        }
-        
-        // Set session ID
-        document.getElementById("session-id").value = sessionId;
-        
-      } catch (err) {
-        console.warn("Failed to populate settings from session state:", err);
-      }
+      // Add listeners for radio buttons
+      const radioGroups = ["dot-size", "dot-style", "contrast-mode"];
+      radioGroups.forEach(name => {
+        const radios = document.querySelectorAll(`input[name="${name}"]`);
+        radios.forEach(radio => {
+          radio.addEventListener("change", clearResetFlag);
+        });
+      });
     });
+
+    function updateDeleteButtonVisibility() {
+      const sessionId = document.getElementById("session-id").value.trim();
+      const deleteBtn = document.getElementById("delete-session-link");
+      if (deleteBtn) {
+        deleteBtn.style.opacity = sessionId ? '1' : '0.5';
+        deleteBtn.style.pointerEvents = sessionId ? 'auto' : 'none';
+      }
+    }
   </script>
 </body>
 </html>

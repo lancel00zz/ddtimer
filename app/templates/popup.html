@@ -492,7 +492,7 @@
           </span>
         </div>
 
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.5</div>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.6 dev</div>
       </div>
     </div>
 
@@ -512,7 +512,7 @@
     let sessionState = {
       minutes: 0,
       seconds: 0,
-      teams: 0,
+      red_teams: 0,
       green_teams: 0,
       dot_size: "S",
       background_color: "#d0f0ff",
@@ -520,8 +520,8 @@
       font_family: "Courier New",
       background_image: null,
       custom_font_color_set: false,
-      dot_style: "circle", // Added dot_style
-      contrast_mode: "auto" // Added contrast_mode
+      dot_style: "datadog_bits",
+      contrast_mode: "auto"
     };
 
     // ─── UI state ───
@@ -549,12 +549,20 @@
       if (text.startsWith("Session ID: ")) {
         return text.replace("Session ID: ", "");
       }
+      // If text is "No session ID currently defined", return "default"
+      if (text === "No session ID currently defined") {
+        return "default";
+      }
       return "default";
     }
 
     function updateAddressBar(session) {
       const url = new URL(window.location);
-      url.searchParams.set("session", session);
+      if (!session || session === "default") {
+        url.searchParams.delete("session");
+      } else {
+        url.searchParams.set("session", session);
+      }
       window.history.replaceState(null, "", url);
     }
 
@@ -595,7 +603,7 @@
       const dotSizeMap = { S: 16, M: 30, L: 50, XL: 80 };
       const px = `${dotSizeMap[size] || 16}px`;
       
-      const useDatadog = sessionState.dot_style === "datadog";
+      const useDatadog = sessionState.dot_style === "datadog_bits";
       for (let i = 0; i < numCount; i++) {
         if (useDatadog) {
           const img = document.createElement("img");
@@ -825,7 +833,7 @@
       updateTimerDisplay();
       
       // Update UI state
-      if (totalSeconds > 0 || sessionState.teams > 0 || sessionState.green_teams > 0) {
+      if (totalSeconds > 0 || sessionState.red_teams > 0 || sessionState.green_teams > 0) {
         optionsBtn.classList.remove("hidden");
         resetBtn.classList.remove("hidden"); // Show reset when there's content
       } else {
@@ -848,12 +856,12 @@
         ...data,
         minutes: parseInt(data.minutes, 10) || 0,
         seconds: parseInt(data.seconds, 10) || 0,
-        teams: parseInt(data.teams, 10) || 0,
+        red_teams: parseInt(data.red_teams || data.teams, 10) || 0,
         green_teams: parseInt(data.green_teams, 10) || 0,
-        dot_size: data.dot_size || "S",  // Ensure dot_size is preserved
-        dot_style: data.dot_style || "circle", // Ensure dot_style is preserved
-        contrast_mode: data.contrast_mode || "auto", // Ensure contrast_mode is preserved
-        custom_font_color_set: true  // Mark that a custom font color has been set
+        dot_size: data.dot_size || "S",
+        dot_style: data.dot_style || "datadog_bits",
+        contrast_mode: data.contrast_mode || "auto",
+        custom_font_color_set: true
       };
       
       console.log("🔧 Processed data:", processedData);
@@ -865,8 +873,8 @@
       applyTimer();
       
       // Recreate dots but preserve the current state
-      const remainingRedDots = Math.max(0, sessionState.teams - currentGreenDots);
-      const actualGreenDots = Math.min(currentGreenDots, sessionState.teams);
+      const remainingRedDots = Math.max(0, sessionState.red_teams - currentGreenDots);
+      const actualGreenDots = Math.min(currentGreenDots, sessionState.red_teams);
       
       createDots(remainingRedDots, "red", sessionState.dot_size);
       createDots(actualGreenDots, "green", sessionState.dot_size);
@@ -885,7 +893,7 @@
       }
       
       // Update session indicator
-      if (data.session_id) {
+      if (data.session_id && data.session_id !== "" && data.session_id !== null) {
         const sessionIndicator = document.getElementById("session-indicator");
         sessionIndicator.textContent = `Session ID: ${data.session_id}`;
         sessionStorage.setItem("session", data.session_id);
@@ -893,6 +901,15 @@
         
         const qrImg = document.querySelector(".qr-section img");
         if (qrImg) qrImg.src = `/qr-image?session=${encodeURIComponent(data.session_id)}`;
+      } else {
+        // Clear session when session_id is empty, null, or undefined
+        const sessionIndicator = document.getElementById("session-indicator");
+        sessionIndicator.textContent = "No session ID currently defined";
+        sessionStorage.removeItem("session");
+        updateAddressBar("");
+        
+        const qrImg = document.querySelector(".qr-section img");
+        if (qrImg) qrImg.src = "/qr-image";
       }
       
       console.log("🔧 Settings applied - Preserved dot state: red=" + remainingRedDots + ", green=" + actualGreenDots);
@@ -916,17 +933,44 @@
     async function loadSessionState() {
       try {
         const session = getCurrentSession();
-        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(session)}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data && Object.keys(data).length > 0) {
-            Object.assign(sessionState, data);
+        
+        // If no session (default mode), always load golden standard
+        if (!session || session === "default") {
+          const gsResp = await fetch('/api/golden-standard');
+          if (gsResp.ok) {
+            const gsData = await gsResp.json();
+            Object.assign(sessionState, gsData);
             applyAppearance();
             applyTimer();
-            createDots(sessionState.teams, "red", sessionState.dot_size);
-            createDots(sessionState.green_teams, "green", sessionState.dot_size);
+            createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
+            createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+          }
+        } else {
+          // Load specific session data
+          const resp = await fetch(`/api/session-state?session=${encodeURIComponent(session)}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && Object.keys(data).length > 0) {
+              Object.assign(sessionState, data);
+              applyAppearance();
+              applyTimer();
+              createDots(sessionState.red_teams || sessionState.teams || 0, "red", sessionState.dot_size);
+              createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+            } else {
+              // Fallback to golden standard if session data is empty
+              const gsResp = await fetch('/api/golden-standard');
+              if (gsResp.ok) {
+                const gsData = await gsResp.json();
+                Object.assign(sessionState, gsData);
+                applyAppearance();
+                applyTimer();
+                createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
+                createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+              }
+            }
           }
         }
+        
         // After loading session state, also fetch current scan count
         const pingResp = await fetch(`/ping?session=${encodeURIComponent(session)}`);
         if (pingResp.ok) {
@@ -956,6 +1000,62 @@
         applySettings(event.data);
         await saveSessionState();
         console.log("✔️ Settings applied and saved");
+        
+        // Reset the reset state when new settings are applied
+        resetState = "ready";
+
+        // Update session indicator and storage
+        if (!event.data.session_id || event.data.session_id === "default" || event.data.session_id === null) {
+          sessionStorage.removeItem("session");
+          updateAddressBar("");
+          
+          // Reload golden standard when clearing session
+          try {
+            const gsResp = await fetch('/api/golden-standard');
+            if (gsResp.ok) {
+              const gsData = await gsResp.json();
+              Object.assign(sessionState, gsData);
+              applyAppearance();
+              applyTimer();
+              createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
+              createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+            }
+          } catch (err) {
+            console.warn("Could not reload golden standard:", err);
+          }
+        } else {
+          sessionStorage.setItem("session", event.data.session_id);
+          updateAddressBar(event.data.session_id);
+        }
+        
+        // Always update session indicator after all changes
+        updateSessionIndicator();
+      } else if (event.data.type === "reset-to-default") {
+        console.log("🔄 Received reset-to-default message from:", event.origin);
+        console.log("🔄 Message data:", event.data);
+        
+        // Clear session storage and URL
+        sessionStorage.removeItem("session");
+        console.log("🔄 Cleared sessionStorage");
+        updateAddressBar("");
+        console.log("🔄 Updated address bar");
+        
+        // Reload golden standard
+        try {
+          const gsResp = await fetch('/api/golden-standard');
+          if (gsResp.ok) {
+            const gsData = await gsResp.json();
+            Object.assign(sessionState, gsData);
+            applyAppearance();
+            applyTimer();
+            createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
+            createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+            updateSessionIndicator();
+            console.log("✔️ Reset to golden standard completed");
+          }
+        } catch (err) {
+          console.warn("Could not reload golden standard for reset:", err);
+        }
       }
     });
 
@@ -967,7 +1067,7 @@
         openSettings();
         return;
       }
-      if (totalSeconds === 0 && sessionState.teams === 0 && sessionState.green_teams === 0) {
+      if (totalSeconds === 0 && sessionState.red_teams === 0 && sessionState.green_teams === 0) {
         openSettings();
         return;
       }
@@ -995,6 +1095,8 @@
         toggleBtn.classList.add("primary-active");
         resetBtn.classList.remove("hidden");
         updateButtonsLayout();
+        // Reset the reset state when timer starts
+        resetState = "ready";
       } else {
         // Pause timer
         clearInterval(intervalId);
@@ -1005,57 +1107,64 @@
       }
     });
 
+    // Track reset state for the improved workflow
+    let resetState = "ready"; // "ready", "restored", "cleared"
+
     resetBtn.addEventListener("click", async () => {
       wasTimerRunning = intervalId !== null;
       clearInterval(intervalId);
       intervalId = null;
       lastSeenCount = 0;
 
-      // Determine if timer is stopped and at the last set value
+      // Determine the originally set values from session
       const setSeconds = (parseInt(sessionState.minutes, 10) || 0) * 60 + (parseInt(sessionState.seconds, 10) || 0);
-      const isStopped = intervalId === null;
-      const isAtSetValue = totalSeconds === setSeconds;
+      const setRedTeams = sessionState.red_teams || 0;
+      const setGreenTeams = sessionState.green_teams || 0;
 
-      if (isStopped && isAtSetValue) {
-        // Full reset to zero
-        totalSeconds = 0;
-        sessionState.teams = 0;
-        sessionState.green_teams = 0;
-        sessionState.minutes = 0;
-        sessionState.seconds = 0;
-        updateTimerDisplay();
-        createDots(0, "red", sessionState.dot_size);
-        createDots(0, "green", sessionState.dot_size);
-        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
-        toggleBtn.classList.remove("primary-active");
-        toggleBtn.classList.add("primary-idle");
-        toggleBtn.disabled = false;
-        applyAppearance();
-        timerDisplay.classList.remove("flashing-red");
-        optionsBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-        updateButtonsLayout();
-        
-        // Save the reset state to backend
-        await saveSessionState();
-      } else {
-        // Restore to last set value
+      if (resetState === "ready") {
+        // First click: Restore to session settings (timer and team counts)
+        console.log("🔄 First reset: Restoring to session settings");
         totalSeconds = setSeconds;
         updateTimerDisplay();
-        createDots(sessionState.teams, "red", sessionState.dot_size);
-        createDots(0, "green", sessionState.dot_size);
+        createDots(setRedTeams, "red", sessionState.dot_size);
+        createDots(0, "green", sessionState.dot_size); // No green dots moved yet
         toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
         toggleBtn.classList.remove("primary-active");
         toggleBtn.classList.add("primary-idle");
         toggleBtn.disabled = false;
-        applyAppearance();
         timerDisplay.classList.remove("flashing-red");
-        // Keep buttons visible
+        // Keep buttons visible for second reset option
         optionsBtn.classList.remove("hidden");
         resetBtn.classList.remove("hidden");
         updateButtonsLayout();
+        resetState = "restored";
+        
+      } else if (resetState === "restored") {
+        // Second click: Reset timer and teams to zero, keep visual preferences
+        console.log("🔄 Second reset: Clearing timer and teams, keeping visual preferences");
+        totalSeconds = 0;
+        updateTimerDisplay();
+        createDots(0, "red", sessionState.dot_size);
+        createDots(0, "green", sessionState.dot_size);
+        // Clear the team counts in sessionState so the button logic works correctly
+        sessionState.red_teams = 0;
+        sessionState.green_teams = 0;
+        sessionState.minutes = 0;
+        sessionState.seconds = 0;
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
+        toggleBtn.classList.remove("primary-active");
+        toggleBtn.classList.add("primary-idle");
+        toggleBtn.disabled = false;
+        timerDisplay.classList.remove("flashing-red");
+        // Hide buttons for clean slate
+        optionsBtn.classList.add("hidden");
+        resetBtn.classList.add("hidden");
+        updateButtonsLayout();
+        resetState = "cleared";
       }
 
+      // Save the reset state to backend
+      await saveSessionState();
       const currentSession = getCurrentSession();
       fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
     });
@@ -1075,20 +1184,19 @@
 
     // ─── Settings & QR functions ───
     function openSettings() {
-      let sess = sessionStorage.getItem("session");
-      if (!sess || sess === "default") {
-        const newId = Math.random().toString(36).substr(2, 6).toUpperCase();
-        sessionStorage.setItem("session", newId);
-      }
-      
-      // Get the Start button position for centering
-      const startBtnRect = toggleBtn.getBoundingClientRect();
+      // Remove random session ID generation
+      // let sess = sessionStorage.getItem("session");
+      // if (!sess || sess === "default") {
+      //   const newId = Math.random().toString(36).substr(2, 6).toUpperCase();
+      //   sessionStorage.setItem("session", newId);
+      // }
+      // Center the settings window on the screen and make it taller
       const width = 500;
-      const initialHeight = 350;
-      const left = window.screenX + startBtnRect.left + (startBtnRect.width - width) / 2;
-      const top = window.screenY + startBtnRect.top - 50; // Position above the Start button
+      const height = 650;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
 
-      const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${initialHeight},left=${left},top=${top},resizable=yes,scrollbars=yes`);
+      const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
       const currentSession = getCurrentSession();
 
       // Always send the current timer value (totalSeconds)
@@ -1100,11 +1208,11 @@
           type: "position-settings-window",
           left,
           top,
-          prefill_session_id: currentSession,
+          prefill_session_id: (currentSession && currentSession !== "default") ? currentSession : "",
           prefill_minutes: minutes,
           prefill_seconds: seconds,
-          prefill_teams: sessionState.teams,
-          prefill_green_teams: sessionState.green_teams,
+          prefill_red_teams: sessionState.red_teams || sessionState.teams || 0,
+          prefill_green_teams: sessionState.green_teams || 0,
           prefill_dot_size: sessionState.dot_size,
           prefill_background_color: sessionState.background_color,
           prefill_font_color: sessionState.font_color,
@@ -1140,7 +1248,7 @@
     // ─── Dot flight animation ───
     function animateDotFlight(redDot) {
       if (window.matchMedia("(max-width: 600px)").matches) {
-        if (sessionState.dot_style === "datadog") {
+        if (sessionState.dot_style === "datadog_bits") {
           redDot.src = "/static/datadog_green.gif";
           document.getElementById("right-dots").appendChild(redDot);
         } else {
@@ -1153,7 +1261,7 @@
           document.getElementById("right-dots").appendChild(redDot);
         }
         // Check if this was the last red dot
-        const selector = sessionState.dot_style === "datadog" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
+        const selector = sessionState.dot_style === "datadog_bits" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
         if (document.querySelectorAll(selector).length === 0) {
           showFinishState();
         }
@@ -1165,7 +1273,7 @@
       const endRect = rightCol.getBoundingClientRect();
 
       let clone;
-      if (sessionState.dot_style === "datadog") {
+      if (sessionState.dot_style === "datadog_bits") {
         clone = redDot.cloneNode(false);
         clone.style.position = "fixed";
         clone.style.left = `${startRect.left}px`;
@@ -1214,7 +1322,7 @@
       setTimeout(() => {
         clone.style.transition = "transform 0.5s ease-in, background-color 0.2s linear";
         clone.style.transform = tr(acrossDistance, upDistance + downDistance);
-        if (sessionState.dot_style === "datadog") {
+        if (sessionState.dot_style === "datadog_bits") {
           clone.src = "/static/datadog_green.gif";
         } else {
           clone.style.backgroundColor = "green";
@@ -1222,7 +1330,7 @@
       }, 1400);
 
       setTimeout(() => {
-        if (sessionState.dot_style === "datadog") {
+        if (sessionState.dot_style === "datadog_bits") {
           const newImg = document.createElement("img");
           newImg.className = "dot-img";
           newImg.src = "/static/datadog_green.gif";
@@ -1238,7 +1346,7 @@
         }
         clone.remove();
         // Check if this was the last red dot, but delay flag for animation finish
-        const selector = sessionState.dot_style === "datadog" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
+        const selector = sessionState.dot_style === "datadog_bits" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
         if (document.querySelectorAll(selector).length === 0) {
           setTimeout(showFinishState, 100); // Delay flag for animation
         }
@@ -1266,7 +1374,7 @@
         const count = parseInt(await res.text(), 10);
         if (count > lastSeenCount) {
           let redDot;
-          if (sessionState.dot_style === "datadog") {
+          if (sessionState.dot_style === "datadog_bits") {
             redDot = document.querySelector("#left-dots img.dot-img");
           } else {
             redDot = document.querySelector("#left-dots .dot.red");
@@ -1288,22 +1396,43 @@
     }
 
     // ─── Initialize ───
+    function updateSessionIndicator() {
+      const session = sessionStorage.getItem("session") || "";
+      const sessionIndicator = document.getElementById("session-indicator");
+      if (session) {
+        sessionIndicator.textContent = `Session ID: ${session}`;
+      } else {
+        sessionIndicator.textContent = "No session ID currently defined";
+      }
+    }
+
+    // Centralized session management on page load
     window.addEventListener("DOMContentLoaded", async () => {
+      // Determine session from URL or sessionStorage
+      let session = "";
+      const urlSess = new URLSearchParams(window.location.search).get("session");
+      if (urlSess) {
+        session = urlSess;
+        sessionStorage.setItem("session", session);
+      } else {
+        // Clear any old session data when no session in URL
+        sessionStorage.removeItem("session");
+        session = "";
+      }
+
       // Load session state
       await loadSessionState();
-      
-      // Initialize session indicator
-      const sessionIndicator = document.getElementById("session-indicator");
-      const stored = sessionStorage.getItem("session") || "default";
-      sessionIndicator.textContent = `Session ID: ${stored}`;
-      updateAddressBar(stored);
-      
+
+      // Update session indicator
+      updateSessionIndicator();
+      updateAddressBar(session);
+
       // Initialize QR
       const qrImg = document.querySelector(".qr-section img");
       if (qrImg) {
-        qrImg.src = stored && stored !== "default" ? `/qr-image?session=${encodeURIComponent(stored)}` : "/qr-image";
+        qrImg.src = session ? `/qr-image?session=${encodeURIComponent(session)}` : "/qr-image";
       }
-      
+
       updateButtonsLayout();
     });
 
