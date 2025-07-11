@@ -9,22 +9,7 @@ import time
 from pathlib import Path
 
 def _load_default_from_file() -> dict:
-    cfg_path = Path("config/config.json")
-    try:
-        with cfg_path.open() as f:
-            return json.load(f)
-    except Exception as exc:
-        # Fallback to hard‑coded sane defaults if file missing / bad
-        print(f"[facilitator‑timer] Could not read {cfg_path}: {exc}")
-        return {
-            "ui": {
-                "background_color": "#b36ab4",
-                "font_family": "Oswald",
-                "font_color": "#000000",
-                "dot_size": "M",
-                "background_image": None
-            }
-        }
+    return _load_golden_standard()
 import random
 import string
 
@@ -97,11 +82,18 @@ def edit_config():
 
     # ─────────────────── If GET → render form with current JSON ───────────────────
     session_id = request.args.get("session", "default")
-    all_states = _load_all_session_states()
-    content = all_states.get(session_id)
-    if content is None:
-        # fallback to config.json's UI section, but as a full dict
-        content = _load_default_from_file()
+    
+    # If no session ID or "default", always load golden standard
+    if not session_id or session_id == "default":
+        content = _load_golden_standard()
+    else:
+        # Load specific session data
+        all_states = _load_all_session_states()
+        content = all_states.get(session_id)
+        if content is None:
+            # fallback to golden standard if session not found
+            content = _load_golden_standard()
+    
     pretty = json.dumps(content, indent=2)
 
     return render_template(
@@ -286,3 +278,19 @@ def upload_background():
             return jsonify({"error": f"Failed to save file: {str(e)}"}), 500
     
     return jsonify({"error": "Invalid file"}), 400
+
+
+def _load_golden_standard() -> dict:
+    gs_path = Path("config/golden_standard.json")
+    try:
+        with gs_path.open() as f:
+            return json.load(f)
+    except Exception as exc:
+        print(f"[facilitator-timer] Could not read {gs_path}: {exc}")
+        return {}
+
+@main.route("/api/golden-standard", methods=["GET"])
+def api_golden_standard():
+    gs = _load_golden_standard()
+    gs.pop("session_id", None)  # Ensure session_id is never returned
+    return jsonify(gs)

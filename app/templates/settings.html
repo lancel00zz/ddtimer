@@ -558,7 +558,7 @@
           if (data) {
             document.getElementById('time-input').value = data.minutes || 0;
             document.getElementById('seconds-input').value = data.seconds || 0;
-            document.getElementById('red-teams').value = data.teams || 0;
+            document.getElementById('red-teams').value = data.red_teams || 0;
             document.getElementById('green-teams').value = data.green_teams || 0;
             if (data.dot_size) {
               const dotInput = document.querySelector(`input[name='dot-size'][value='${data.dot_size}']`);
@@ -638,18 +638,15 @@
       setTimeout(() => { toast.style.display = 'none'; }, 1800);
     }
 
+    // Global flag to track if user wants to reset to default
+    let resetToDefaultFlag = false;
+
     function applySettings() {
       const minutes = parseInt(document.getElementById("time-input").value, 10);
       const seconds = parseInt(document.getElementById("seconds-input").value, 10);
       const red = parseInt(document.getElementById("red-teams").value, 10);
       const green = parseInt(document.getElementById("green-teams").value, 10);
       let sessionId = document.getElementById("session-id").value.trim();
-      if (!sessionId) {
-        sessionId = generateRandomSessionId();
-        document.getElementById("session-id").value = sessionId;
-        sessionStorage.setItem("session", sessionId);
-        showSessionToast('New session ID generated.');
-      }
       const dotSize = document.querySelector('input[name="dot-size"]:checked')?.value || "S";
       const dotStyle = document.querySelector('input[name="dot-style"]:checked')?.value || "circle";
       const contrastMode = document.querySelector('input[name="contrast-mode"]:checked')?.value || "auto";
@@ -657,14 +654,27 @@
       const fontColor = document.getElementById("font-color").value;
       const fontFamily = document.getElementById("font-family").value;
 
+      // If reset to default flag is set, always clear session ID
+      if (resetToDefaultFlag) {
+        sessionId = "";
+        document.getElementById("session-id").value = "";
+        console.log("🔄 Reset to default flag is set, clearing session ID");
+      } else if (!sessionId) {
+        // If no session ID and not resetting to default, generate one
+        sessionId = generateRandomSessionId();
+        document.getElementById("session-id").value = sessionId;
+        showSessionToast('New session ID generated for your changes.');
+        console.log("🔄 Generated new session ID:", sessionId);
+      }
+
       if (window.opener) {
         window.opener.postMessage({
           type: "settings",
           minutes,
           seconds,
-          teams: red,
+          red_teams: red,
           green_teams: green,
-          session_id: sessionId || null,
+          session_id: sessionId || "",
           dot_size: dotSize,
           dot_style: dotStyle,
           contrast_mode: contrastMode,
@@ -674,7 +684,12 @@
           background_image: currentBackgroundImage
         }, "*");
       }
-      sessionStorage.setItem("session", sessionId);
+      // Save session to storage if we have a session ID
+      if (sessionId) {
+        sessionStorage.setItem("session", sessionId);
+      } else {
+        sessionStorage.removeItem("session");
+      }
       window.close();
     }
 
@@ -811,30 +826,38 @@
 
     async function loadDefaultAppearanceValues() {
       try {
-        // Fetch default session state from backend (this contains the full defaults from Docker image)
-        const response = await fetch('/api/session-state?session=default');
+        const response = await fetch('/api/golden-standard');
         if (response.ok) {
           const defaultState = await response.json();
           defaultAppearanceValues = {
+            minutes: defaultState.minutes || 0,
+            seconds: defaultState.seconds || 0,
+            red_teams: defaultState.red_teams || 0,
+            green_teams: defaultState.green_teams || 0,
             background_color: defaultState.background_color || "#d0f0ff",
             font_color: defaultState.font_color || "#000000",
             font_family: defaultState.font_family || "Oswald",
             background_image: defaultState.background_image || null,
             dot_size: defaultState.dot_size || "M",
-            dot_style: defaultState.dot_style || "circle"
+            dot_style: defaultState.dot_style || "datadog_bits",
+            contrast_mode: defaultState.contrast_mode || "auto"
           };
           console.log("Loaded default appearance values:", defaultAppearanceValues);
         }
       } catch (err) {
         console.warn("Failed to load default appearance values:", err);
-        // Fallback to hardcoded values
         defaultAppearanceValues = {
+          minutes: 0,
+          seconds: 0,
+          red_teams: 0,
+          green_teams: 0,
           background_color: "#d0f0ff",
           font_color: "#000000",
           font_family: "Oswald",
           background_image: null,
           dot_size: "M",
-          dot_style: "circle"
+          dot_style: "datadog_bits",
+          contrast_mode: "auto"
         };
       }
     }
@@ -842,17 +865,32 @@
     function resetAppearanceToDefault(event) {
       event.stopPropagation(); // Prevent section toggle
       
+      // Set the reset to default flag
+      resetToDefaultFlag = true;
+      console.log("🔄 Reset to default flag set to true");
+      
       // Use dynamically loaded default values
       const defaultValues = defaultAppearanceValues || {
+        minutes: 0,
+        seconds: 0,
+        red_teams: 0,
+        green_teams: 0,
         background_color: "#d0f0ff",
         font_color: "#000000",
         font_family: "Oswald",
         background_image: null,
         dot_size: "M",
-        dot_style: "circle"
+        dot_style: "datadog_bits",
+        contrast_mode: "auto"
       };
       
-      // Reset form fields
+      // Reset timer fields
+      document.getElementById("time-input").value = defaultValues.minutes;
+      document.getElementById("seconds-input").value = defaultValues.seconds;
+      document.getElementById("red-teams").value = defaultValues.red_teams;
+      document.getElementById("green-teams").value = defaultValues.green_teams;
+      
+      // Reset appearance fields
       document.getElementById("background-color").value = defaultValues.background_color;
       document.getElementById("font-color").value = defaultValues.font_color;
       document.getElementById("font-family").value = defaultValues.font_family;
@@ -865,14 +903,43 @@
       const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${defaultValues.dot_style}']`);
       if (dotStyleInput) dotStyleInput.checked = true;
       
-      // Reset background image
+      // Reset contrast mode
+      const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${defaultValues.contrast_mode}']`);
+      if (contrastInput) contrastInput.checked = true;
+      
+      // Reset background image - properly clear any uploaded images
       currentBackgroundImage = defaultValues.background_image;
-      document.getElementById("background-filename").textContent = `Default: ${defaultValues.background_image}`;
-      document.getElementById("image-thumbnail").src = `/static/${defaultValues.background_image}`;
-      document.getElementById("image-thumbnail").classList.add("visible");
-      document.getElementById("image-info").textContent = defaultValues.background_image;
-      document.getElementById("image-preview").style.display = "flex";
+      if (defaultValues.background_image) {
+        document.getElementById("background-filename").textContent = `Default: ${defaultValues.background_image}`;
+        document.getElementById("image-thumbnail").src = `/static/${defaultValues.background_image}`;
+        document.getElementById("image-thumbnail").classList.add("visible");
+        document.getElementById("image-info").textContent = defaultValues.background_image;
+        document.getElementById("image-preview").style.display = "flex";
+      } else {
+        // Clear background image display
+        document.getElementById("background-filename").textContent = "";
+        document.getElementById("image-thumbnail").classList.remove("visible");
+        document.getElementById("image-preview").style.display = "none";
+      }
       document.getElementById("background-file").value = "";
+      
+      // Clear session ID to indicate we're in default mode
+      document.getElementById("session-id").value = "";
+      sessionStorage.removeItem("session");
+      updateDeleteButtonVisibility();
+      
+      // Send reset message to main timer page to clear URL and storage
+      setTimeout(() => {
+        if (window.opener && !window.opener.closed) {
+          console.log("🔄 Sending reset-to-default message to opener");
+          window.opener.postMessage({
+            type: "reset-to-default"
+          }, "*");
+          console.log("🔄 Reset message sent");
+        } else {
+          console.warn("🔄 No opener window found or opener is closed");
+        }
+      }, 100); // Small delay to ensure everything is ready
       
       // Show confirmation
       const btn = event.target;
@@ -935,9 +1002,9 @@
           document.getElementById("seconds-input").value = event.data.prefill_seconds;
           prefill.seconds = true;
         }
-        if (event.data.prefill_teams !== undefined) {
-          document.getElementById("red-teams").value = event.data.prefill_teams;
-          prefill.teams = true;
+        if (event.data.prefill_red_teams !== undefined) {
+          document.getElementById("red-teams").value = event.data.prefill_red_teams;
+          prefill.red_teams = true;
         }
         if (event.data.prefill_green_teams !== undefined) {
           document.getElementById("green-teams").value = event.data.prefill_green_teams;
@@ -984,6 +1051,14 @@
       }
     });
 
+    // Function to clear reset flag when user makes changes
+    function clearResetFlag() {
+      if (resetToDefaultFlag) {
+        resetToDefaultFlag = false;
+        console.log("🔄 Reset to default flag cleared due to user modification");
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       const sessionInput = document.getElementById("session-id");
       let session = sessionStorage.getItem("session") || "";
@@ -995,6 +1070,30 @@
       sessionInput.value = session;
       fetchAndPrefillSessionState();
       updateDeleteButtonVisibility();
+      loadDefaultAppearanceValues();
+      
+      // Add event listeners to clear reset flag when user makes changes
+      const inputs = [
+        "time-input", "seconds-input", "red-teams", "green-teams",
+        "background-color", "font-color", "font-family", "background-file"
+      ];
+      
+      inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.addEventListener("input", clearResetFlag);
+          element.addEventListener("change", clearResetFlag);
+        }
+      });
+      
+      // Add listeners for radio buttons
+      const radioGroups = ["dot-size", "dot-style", "contrast-mode"];
+      radioGroups.forEach(name => {
+        const radios = document.querySelectorAll(`input[name="${name}"]`);
+        radios.forEach(radio => {
+          radio.addEventListener("change", clearResetFlag);
+        });
+      });
     });
 
     function updateDeleteButtonVisibility() {
