@@ -1090,20 +1090,19 @@
 
     // ─── Settings & QR functions ───
     function openSettings() {
-      let sess = sessionStorage.getItem("session");
-      if (!sess || sess === "default") {
-        const newId = Math.random().toString(36).substr(2, 6).toUpperCase();
-        sessionStorage.setItem("session", newId);
-      }
-      
-      // Get the Start button position for centering
-      const startBtnRect = toggleBtn.getBoundingClientRect();
+      // Remove random session ID generation
+      // let sess = sessionStorage.getItem("session");
+      // if (!sess || sess === "default") {
+      //   const newId = Math.random().toString(36).substr(2, 6).toUpperCase();
+      //   sessionStorage.setItem("session", newId);
+      // }
+      // Center the settings window on the screen and make it taller
       const width = 500;
-      const initialHeight = 350;
-      const left = window.screenX + startBtnRect.left + (startBtnRect.width - width) / 2;
-      const top = window.screenY + startBtnRect.top - 50; // Position above the Start button
+      const height = 650;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
 
-      const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${initialHeight},left=${left},top=${top},resizable=yes,scrollbars=yes`);
+      const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
       const currentSession = getCurrentSession();
 
       // Always send the current timer value (totalSeconds)
@@ -1115,7 +1114,7 @@
           type: "position-settings-window",
           left,
           top,
-          prefill_session_id: currentSession,
+          prefill_session_id: (currentSession && currentSession !== "default") ? currentSession : "",
           prefill_minutes: minutes,
           prefill_seconds: seconds,
           prefill_teams: sessionState.teams,
@@ -1306,27 +1305,38 @@
     function updateSessionIndicator() {
       const session = sessionStorage.getItem("session") || "";
       const sessionIndicator = document.getElementById("session-indicator");
-      if (session && session !== "default") {
+      if (session) {
         sessionIndicator.textContent = `Session ID: ${session}`;
       } else {
         sessionIndicator.textContent = "Session ID:";
       }
     }
 
+    // Centralized session management on page load
     window.addEventListener("DOMContentLoaded", async () => {
+      // Determine session from URL or sessionStorage
+      let session = "";
+      const urlSess = new URLSearchParams(window.location.search).get("session");
+      if (urlSess) {
+        session = urlSess;
+        sessionStorage.setItem("session", session);
+      } else {
+        sessionStorage.removeItem("session");
+      }
+
       // Load session state
       await loadSessionState();
-      
-      // Initialize session indicator
+
+      // Update session indicator
       updateSessionIndicator();
-      updateAddressBar(sessionStorage.getItem("session"));
-      
+      updateAddressBar(session);
+
       // Initialize QR
       const qrImg = document.querySelector(".qr-section img");
       if (qrImg) {
-        qrImg.src = sessionStorage.getItem("session") && sessionStorage.getItem("session") !== "default" ? `/qr-image?session=${encodeURIComponent(sessionStorage.getItem("session"))}` : "/qr-image";
+        qrImg.src = session ? `/qr-image?session=${encodeURIComponent(session)}` : "/qr-image";
       }
-      
+
       updateButtonsLayout();
     });
 
