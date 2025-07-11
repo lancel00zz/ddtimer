@@ -976,5 +976,21 @@
     "contrast_mode": "auto",
     "type": "settings",
     "session_id": "SJP9NSP6T"
+  },
+  "SWXHM9WDR": {
+    "minutes": 0,
+    "seconds": 0,
+    "red_teams": 0,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#fbe80e",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": null,
+    "custom_font_color_set": true,
+    "dot_style": "circle",
+    "contrast_mode": "auto",
+    "type": "settings",
+    "session_id": "SWXHM9WDR"
   }
 }
