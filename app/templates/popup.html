@@ -1000,6 +1000,9 @@
         applySettings(event.data);
         await saveSessionState();
         console.log("✔️ Settings applied and saved");
+        
+        // Reset the reset state when new settings are applied
+        resetState = "ready";
 
         // Update session indicator and storage
         if (!event.data.session_id || event.data.session_id === "default" || event.data.session_id === null) {
@@ -1092,6 +1095,8 @@
         toggleBtn.classList.add("primary-active");
         resetBtn.classList.remove("hidden");
         updateButtonsLayout();
+        // Reset the reset state when timer starts
+        resetState = "ready";
       } else {
         // Pause timer
         clearInterval(intervalId);
@@ -1102,63 +1107,64 @@
       }
     });
 
+    // Track reset state for the improved workflow
+    let resetState = "ready"; // "ready", "restored", "cleared"
+
     resetBtn.addEventListener("click", async () => {
       wasTimerRunning = intervalId !== null;
       clearInterval(intervalId);
       intervalId = null;
       lastSeenCount = 0;
 
-      // Determine if timer is stopped and at the last set value
+      // Determine the originally set values from session
       const setSeconds = (parseInt(sessionState.minutes, 10) || 0) * 60 + (parseInt(sessionState.seconds, 10) || 0);
-      const isStopped = intervalId === null;
-      const isAtSetValue = totalSeconds === setSeconds;
+      const setRedTeams = sessionState.red_teams || 0;
+      const setGreenTeams = sessionState.green_teams || 0;
 
-      if (isStopped && isAtSetValue) {
-        // Full reset to zero - load golden standard
-        try {
-          const gsResp = await fetch('/api/golden-standard');
-          if (gsResp.ok) {
-            const gsData = await gsResp.json();
-            Object.assign(sessionState, gsData);
-          }
-        } catch (err) {
-          console.warn("Could not load golden standard for reset:", err);
-        }
-        
-        totalSeconds = 0;
-        updateTimerDisplay();
-        createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
-        createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
-        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
-        toggleBtn.classList.remove("primary-active");
-        toggleBtn.classList.add("primary-idle");
-        toggleBtn.disabled = false;
-        applyAppearance();
-        timerDisplay.classList.remove("flashing-red");
-        optionsBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-        updateButtonsLayout();
-        
-        // Save the reset state to backend
-        await saveSessionState();
-      } else {
-        // Restore to last set value
+      if (resetState === "ready") {
+        // First click: Restore to session settings (timer and team counts)
+        console.log("🔄 First reset: Restoring to session settings");
         totalSeconds = setSeconds;
         updateTimerDisplay();
-        createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
-        createDots(0, "green", sessionState.dot_size);
+        createDots(setRedTeams, "red", sessionState.dot_size);
+        createDots(0, "green", sessionState.dot_size); // No green dots moved yet
         toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
         toggleBtn.classList.remove("primary-active");
         toggleBtn.classList.add("primary-idle");
         toggleBtn.disabled = false;
-        applyAppearance();
         timerDisplay.classList.remove("flashing-red");
-        // Keep buttons visible
+        // Keep buttons visible for second reset option
         optionsBtn.classList.remove("hidden");
         resetBtn.classList.remove("hidden");
         updateButtonsLayout();
+        resetState = "restored";
+        
+      } else if (resetState === "restored") {
+        // Second click: Reset timer and teams to zero, keep visual preferences
+        console.log("🔄 Second reset: Clearing timer and teams, keeping visual preferences");
+        totalSeconds = 0;
+        updateTimerDisplay();
+        createDots(0, "red", sessionState.dot_size);
+        createDots(0, "green", sessionState.dot_size);
+        // Clear the team counts in sessionState so the button logic works correctly
+        sessionState.red_teams = 0;
+        sessionState.green_teams = 0;
+        sessionState.minutes = 0;
+        sessionState.seconds = 0;
+        toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
+        toggleBtn.classList.remove("primary-active");
+        toggleBtn.classList.add("primary-idle");
+        toggleBtn.disabled = false;
+        timerDisplay.classList.remove("flashing-red");
+        // Hide buttons for clean slate
+        optionsBtn.classList.add("hidden");
+        resetBtn.classList.add("hidden");
+        updateButtonsLayout();
+        resetState = "cleared";
       }
 
+      // Save the reset state to backend
+      await saveSessionState();
       const currentSession = getCurrentSession();
       fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
     });

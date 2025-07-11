@@ -978,12 +978,28 @@
     "session_id": "SJP9NSP6T"
   },
   "SWXHM9WDR": {
-    "minutes": 0,
+    "minutes": 4,
     "seconds": 0,
-    "red_teams": 0,
+    "red_teams": 3,
+    "green_teams": 0,
+    "dot_size": "XL",
+    "background_color": "#f9e510",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": null,
+    "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "contrast_mode": "auto",
+    "type": "settings",
+    "session_id": "SWXHM9WDR"
+  },
+  "SQ1K9VASY": {
+    "minutes": 4,
+    "seconds": 0,
+    "red_teams": 3,
     "green_teams": 0,
     "dot_size": "M",
-    "background_color": "#fbe80e",
+    "background_color": "#188b40",
     "font_color": "#000000",
     "font_family": "Oswald",
     "background_image": null,
@@ -991,6 +1007,38 @@
     "dot_style": "circle",
     "contrast_mode": "auto",
     "type": "settings",
-    "session_id": "SWXHM9WDR"
+    "session_id": "SQ1K9VASY"
+  },
+  "S957XAXGX": {
+    "minutes": 0,
+    "seconds": 0,
+    "red_teams": 0,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#e79608",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": null,
+    "custom_font_color_set": true,
+    "dot_style": "circle",
+    "contrast_mode": "auto",
+    "type": "settings",
+    "session_id": "S957XAXGX"
+  },
+  "SZM25AF1L": {
+    "minutes": 0,
+    "seconds": 0,
+    "red_teams": 0,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#a97a14",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": null,
+    "custom_font_color_set": true,
+    "dot_style": "circle",
+    "contrast_mode": "auto",
+    "type": "settings",
+    "session_id": "SZM25AF1L"
   }
 }
