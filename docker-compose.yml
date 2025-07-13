@@ -8,8 +8,39 @@
 services:
   facilitator:
     platform: linux/amd64
-    image: lancel00zz/facilitator-timer-app:4.5
+    image: lancel00zz/facilitator-timer-app:latest
     pull_policy: always
     ports:
       - "5050:5050"
     restart: unless-stopped
+    environment:
+      - DD_ENV=production
+      - DD_SERVICE=facilitator-timer
+      - DD_VERSION=4.8
+    networks:
+      - facilitator-network
+
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    platform: linux/amd64
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=datadoghq.com
+      - DD_APM_ENABLED=false
+      - DD_LOGS_ENABLED=true
+      - DD_PROCESS_AGENT_ENABLED=true
+      - DD_CONTAINER_EXCLUDE=name:datadog-agent
+      - DD_HOSTNAME=facilitator-prod
+      - DD_ENV=production
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    restart: unless-stopped
+    networks:
+      - facilitator-network
+
+networks:
+  facilitator-network:
+    driver: bridge
