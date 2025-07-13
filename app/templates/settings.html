@@ -481,7 +481,7 @@
         <label>Dot style:</label>
         <div class="radio-group">
           <label class="radio-option"><input type="radio" name="dot-style" value="circle" checked> Dots</label>
-          <label class="radio-option"><input type="radio" name="dot-style" value="datadog"> Datadog Bits</label>
+          <label class="radio-option"><input type="radio" name="dot-style" value="datadog_bits"> Datadog Bits</label>
         </div>
       </div>
 
@@ -690,6 +690,23 @@
       } else {
         sessionStorage.removeItem("session");
       }
+      
+      // Update last known JSON state to prevent unnecessary polling
+      lastKnownJsonState = {
+        minutes,
+        seconds,
+        red_teams: red,
+        green_teams: green,
+        session_id: sessionId || "",
+        dot_size: dotSize,
+        dot_style: dotStyle,
+        contrast_mode: contrastMode,
+        background_color: backgroundColor,
+        font_color: fontColor,
+        font_family: fontFamily,
+        background_image: currentBackgroundImage
+      };
+      
       window.close();
     }
 
@@ -823,6 +840,8 @@
     }
 
     let defaultAppearanceValues = null; // Will be loaded from backend
+    let lastKnownJsonState = null;
+    let jsonPollingInterval = null;
 
     async function loadDefaultAppearanceValues() {
       try {
@@ -983,7 +1002,11 @@
 
     // Listen for window position message and prefill session ID if provided
     window.addEventListener("message", (event) => {
-      if (event.data?.type === "position-settings-window") {
+      if (event.data?.type === "json-changed") {
+        console.log("🔄 Received JSON change notification:", event.data);
+        // Refresh the settings form with new data
+        refreshSettingsFromJson(event.data.sessionState);
+      } else if (event.data?.type === "position-settings-window") {
         const { left, top } = event.data;
         window.moveTo(left, top);
         if (event.data.prefill_session_id !== undefined) {
@@ -1072,6 +1095,9 @@
       updateDeleteButtonVisibility();
       loadDefaultAppearanceValues();
       
+      // Start JSON polling as fallback for synchronization
+      startJsonPolling();
+      
       // Add event listeners to clear reset flag when user makes changes
       const inputs = [
         "time-input", "seconds-input", "red-teams", "green-teams",
@@ -1104,6 +1130,113 @@
         deleteBtn.style.pointerEvents = sessionId ? 'auto' : 'none';
       }
     }
+    
+    // Function to refresh settings form from JSON data
+    function refreshSettingsFromJson(data) {
+      if (!data) return;
+      
+      console.log("🔄 Refreshing settings form from JSON:", data);
+      
+      // Update form fields with new data
+      if (data.minutes !== undefined) {
+        document.getElementById("time-input").value = data.minutes || 0;
+      }
+      if (data.seconds !== undefined) {
+        document.getElementById("seconds-input").value = data.seconds || 0;
+      }
+      if (data.red_teams !== undefined) {
+        document.getElementById("red-teams").value = data.red_teams || 0;
+      }
+      if (data.green_teams !== undefined) {
+        document.getElementById("green-teams").value = data.green_teams || 0;
+      }
+      if (data.dot_size) {
+        const dotInput = document.querySelector(`input[name='dot-size'][value='${data.dot_size}']`);
+        if (dotInput) dotInput.checked = true;
+      }
+      if (data.dot_style) {
+        const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${data.dot_style}']`);
+        if (dotStyleInput) dotStyleInput.checked = true;
+      }
+      if (data.contrast_mode) {
+        const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${data.contrast_mode}']`);
+        if (contrastInput) contrastInput.checked = true;
+      }
+      if (data.background_color) {
+        document.getElementById("background-color").value = data.background_color;
+      }
+      if (data.font_color) {
+        document.getElementById("font-color").value = data.font_color;
+      }
+      if (data.font_family) {
+        document.getElementById("font-family").value = data.font_family;
+      }
+      if (data.background_image !== undefined) {
+        currentBackgroundImage = data.background_image;
+        if (data.background_image) {
+          document.getElementById("background-filename").textContent = `Current: ${data.background_image}`;
+          const thumbnail = document.getElementById("image-thumbnail");
+          thumbnail.src = `/static/${data.background_image}`;
+          thumbnail.classList.add("visible");
+          document.getElementById("image-info").textContent = data.background_image;
+          document.getElementById("image-preview").style.display = "flex";
+        } else {
+          document.getElementById("background-filename").textContent = "";
+          document.getElementById("image-thumbnail").classList.remove("visible");
+          document.getElementById("image-preview").style.display = "none";
+        }
+      }
+      if (data.session_id !== undefined) {
+        document.getElementById("session-id").value = data.session_id || "";
+        updateDeleteButtonVisibility();
+      }
+      
+      console.log("✅ Settings form refreshed from JSON");
+    }
+    
+    // JSON polling functions for fallback synchronization
+    async function checkForJsonChanges() {
+      try {
+        const sessionId = document.getElementById("session-id").value.trim();
+        if (!sessionId) return; // Skip for default session
+        
+        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(sessionId)}`);
+        if (resp.ok) {
+          const currentJsonState = await resp.json();
+          
+          // Compare with last known state
+          if (lastKnownJsonState && JSON.stringify(currentJsonState) !== JSON.stringify(lastKnownJsonState)) {
+            console.log("🔄 JSON changed externally (polling), refreshing settings form");
+            refreshSettingsFromJson(currentJsonState);
+            lastKnownJsonState = currentJsonState;
+          } else if (!lastKnownJsonState) {
+            // Initialize last known state
+            lastKnownJsonState = currentJsonState;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not check for JSON changes (polling):", err);
+      }
+    }
+    
+    function startJsonPolling() {
+      if (jsonPollingInterval) {
+        clearInterval(jsonPollingInterval);
+      }
+      jsonPollingInterval = setInterval(checkForJsonChanges, 5000); // Check every 5 seconds
+    }
+    
+    function stopJsonPolling() {
+      if (jsonPollingInterval) {
+        clearInterval(jsonPollingInterval);
+        jsonPollingInterval = null;
+      }
+    }
+    
+    // Clean up polling when window closes
+    window.addEventListener("beforeunload", () => {
+      stopJsonPolling();
+    });
   </script>
 </body>
 </html>

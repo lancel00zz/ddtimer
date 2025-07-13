@@ -35,10 +35,10 @@
     "font_family": "Oswald",
     "background_image": "cannes_new.png",
     "custom_font_color_set": true,
-    "dot_style": "circle",
+    "dot_style": "datadog",
     "contrast_mode": "auto",
-    "type": "settings",
-    "session_id": ""
+    "session_id": "",
+    "type": "settings"
   },
   "2UX358": {
     "minutes": 3,
@@ -1040,5 +1040,37 @@
     "contrast_mode": "auto",
     "type": "settings",
     "session_id": "SZM25AF1L"
+  },
+  "SRSY75MN4": {
+    "minutes": 0,
+    "seconds": 0,
+    "red_teams": 0,
+    "green_teams": 0,
+    "dot_size": "XL",
+    "background_color": "#51839a",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": null,
+    "custom_font_color_set": true,
+    "dot_style": "datadog",
+    "contrast_mode": "auto",
+    "session_id": "SRSY75MN4",
+    "type": "settings"
+  },
+  "SBE29WNL3": {
+    "minutes": 0,
+    "seconds": 0,
+    "red_teams": 0,
+    "green_teams": 0,
+    "dot_size": "M",
+    "background_color": "#d0f0ff",
+    "font_color": "#000000",
+    "font_family": "Oswald",
+    "background_image": "cannes_new.png",
+    "custom_font_color_set": true,
+    "dot_style": "datadog_bits",
+    "contrast_mode": "auto",
+    "type": "settings",
+    "session_id": "SBE29WNL3"
   }
 }
