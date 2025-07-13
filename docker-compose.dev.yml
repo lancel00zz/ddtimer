@@ -11,7 +11,7 @@
 services:
   facilitator:
     platform: linux/amd64
-    image: lancel00zz/facilitator-timer-app:4.2
+    image: lancel00zz/facilitator-timer-app:latest
     ports:
       - "5056:5000"
     pull_policy: always
@@ -20,4 +20,34 @@ services:
       - ./:/app
     environment:
       - FLASK_ENV=development
+      - DD_ENV=development
+      - DD_SERVICE=facilitator-timer
+      - DD_VERSION=4.8-dev
     command: flask run --host=0.0.0.0 --port=5000 --reload
+    networks:
+      - facilitator-network
+
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    platform: linux/amd64
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=datadoghq.com
+      - DD_APM_ENABLED=false
+      - DD_LOGS_ENABLED=true
+      - DD_PROCESS_AGENT_ENABLED=true
+      - DD_CONTAINER_EXCLUDE=name:datadog-agent
+      - DD_HOSTNAME=facilitator-dev
+      - DD_ENV=development
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    restart: unless-stopped
+    networks:
+      - facilitator-network
+
+networks:
+  facilitator-network:
+    driver: bridge
