@@ -492,7 +492,7 @@
           </span>
         </div>
 
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.6 dev</div>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.7</div>
       </div>
     </div>
 
@@ -866,6 +866,13 @@
       
       console.log("🔧 Processed data:", processedData);
       Object.assign(sessionState, processedData);
+      
+      // Migrate old "datadog" to "datadog_bits" for backward compatibility
+      if (sessionState.dot_style === "datadog") {
+        sessionState.dot_style = "datadog_bits";
+        console.log("🔄 Migrated dot_style from 'datadog' to 'datadog_bits' for backward compatibility");
+      }
+      
       console.log("🔧 Session state after update:", sessionState);
       
       // Apply changes
@@ -952,6 +959,13 @@
             const data = await resp.json();
             if (data && Object.keys(data).length > 0) {
               Object.assign(sessionState, data);
+              
+              // Migrate old "datadog" to "datadog_bits" for backward compatibility
+              if (sessionState.dot_style === "datadog") {
+                sessionState.dot_style = "datadog_bits";
+                console.log("🔄 Migrated dot_style from 'datadog' to 'datadog_bits' for backward compatibility");
+              }
+              
               applyAppearance();
               applyTimer();
               createDots(sessionState.red_teams || sessionState.teams || 0, "red", sessionState.dot_size);
@@ -1030,6 +1044,11 @@
         
         // Always update session indicator after all changes
         updateSessionIndicator();
+      } else if (event.data.type === "json-changed-external") {
+        console.log("🔄 Received external JSON change notification:", event.data);
+        // Force reload session state from JSON
+        lastKnownSessionState = null; // Reset to force reload
+        loadSessionState();
       } else if (event.data.type === "reset-to-default") {
         console.log("🔄 Received reset-to-default message from:", event.origin);
         console.log("🔄 Message data:", event.data);
@@ -1133,6 +1152,8 @@
         toggleBtn.classList.add("primary-idle");
         toggleBtn.disabled = false;
         timerDisplay.classList.remove("flashing-red");
+        // Restore proper font color after reset
+        applyAppearance();
         // Keep buttons visible for second reset option
         optionsBtn.classList.remove("hidden");
         resetBtn.classList.remove("hidden");
@@ -1156,6 +1177,8 @@
         toggleBtn.classList.add("primary-idle");
         toggleBtn.disabled = false;
         timerDisplay.classList.remove("flashing-red");
+        // Restore proper font color after reset
+        applyAppearance();
         // Hide buttons for clean slate
         optionsBtn.classList.add("hidden");
         resetBtn.classList.add("hidden");
@@ -1198,6 +1221,11 @@
 
       const settingsWindow = window.open("/settings", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
       const currentSession = getCurrentSession();
+      
+      // Track the opened settings window
+      if (settingsWindow) {
+        openedSettingsWindows.push(settingsWindow);
+      }
 
       // Always send the current timer value (totalSeconds)
       const minutes = Math.floor(totalSeconds / 60);
@@ -1434,10 +1462,107 @@
       }
 
       updateButtonsLayout();
+      
+      // Start JSON synchronization monitoring
+      startJsonSync();
     });
 
     // Start scan checking
     setInterval(checkForNewScans, 2000);
+    
+    // ─── JSON Synchronization ───
+    let lastKnownSessionState = null;
+    let jsonSyncInterval = null;
+    let openedSettingsWindows = [];
+    
+    // Function to check if JSON has changed externally
+    async function checkForJsonChanges() {
+      try {
+        const session = getCurrentSession();
+        if (!session || session === "default") return; // Skip for default session
+        
+        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(session)}`);
+        if (resp.ok) {
+          const currentJsonState = await resp.json();
+          
+          // Compare with last known state
+          if (lastKnownSessionState && JSON.stringify(currentJsonState) !== JSON.stringify(lastKnownSessionState)) {
+            console.log("🔄 JSON changed externally, reloading session state");
+            
+            // Reload session state
+            Object.assign(sessionState, currentJsonState);
+            
+            // Migrate old "datadog" to "datadog_bits" for backward compatibility
+            if (sessionState.dot_style === "datadog") {
+              sessionState.dot_style = "datadog_bits";
+              console.log("🔄 Migrated dot_style from 'datadog' to 'datadog_bits' for backward compatibility");
+            }
+            
+            // Apply changes
+            applyAppearance();
+            applyTimer();
+            createDots(sessionState.red_teams || sessionState.teams || 0, "red", sessionState.dot_size);
+            createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+            
+            // Notify settings window if open
+            notifySettingsWindowOfChange();
+            
+            // Update last known state
+            lastKnownSessionState = currentJsonState;
+          } else if (!lastKnownSessionState) {
+            // Initialize last known state
+            lastKnownSessionState = currentJsonState;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not check for JSON changes:", err);
+      }
+    }
+    
+    // Function to notify settings window of changes
+    function notifySettingsWindowOfChange() {
+      // Notify all opened settings windows of the change
+      try {
+        openedSettingsWindows.forEach(settingsWindow => {
+          if (settingsWindow && !settingsWindow.closed) {
+            settingsWindow.postMessage({
+              type: "json-changed",
+              session: getCurrentSession(),
+              sessionState: sessionState
+            }, "*");
+          }
+        });
+        // Clean up closed windows
+        openedSettingsWindows = openedSettingsWindows.filter(w => w && !w.closed);
+        console.log("🔄 JSON changed, notified settings windows");
+      } catch (err) {
+        console.warn("Could not notify settings window:", err);
+      }
+    }
+    
+    // Start JSON synchronization monitoring
+    function startJsonSync() {
+      if (jsonSyncInterval) {
+        clearInterval(jsonSyncInterval);
+      }
+      jsonSyncInterval = setInterval(checkForJsonChanges, 3000); // Check every 3 seconds
+    }
+    
+    // Stop JSON synchronization monitoring
+    function stopJsonSync() {
+      if (jsonSyncInterval) {
+        clearInterval(jsonSyncInterval);
+        jsonSyncInterval = null;
+      }
+    }
+    
+    // Enhanced saveSessionState to update lastKnownSessionState
+    const originalSaveSessionState = saveSessionState;
+    saveSessionState = async function() {
+      await originalSaveSessionState();
+      // Update last known state after saving
+      lastKnownSessionState = { ...sessionState };
+    };
   </script>
 </body>
 </html>
