@@ -35,7 +35,7 @@
     "font_family": "Oswald",
     "background_image": "cannes_new.png",
     "custom_font_color_set": true,
-    "dot_style": "datadog",
+    "dot_style": "datadog_bits",
     "contrast_mode": "auto",
     "session_id": "",
     "type": "settings"
@@ -1062,15 +1062,15 @@
     "seconds": 0,
     "red_teams": 0,
     "green_teams": 0,
-    "dot_size": "M",
-    "background_color": "#d0f0ff",
+    "dot_size": "S",
+    "background_color": "#f10427",
     "font_color": "#000000",
     "font_family": "Oswald",
-    "background_image": "cannes_new.png",
+    "background_image": null,
     "custom_font_color_set": true,
     "dot_style": "datadog_bits",
     "contrast_mode": "auto",
-    "type": "settings",
-    "session_id": "SBE29WNL3"
+    "session_id": "SBE29WNL3",
+    "type": "settings"
   }
 }

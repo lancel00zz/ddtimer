@@ -250,6 +250,13 @@
         if (window.opener && typeof window.opener.loadAndApplyConfig === 'function') {
           window.opener.loadAndApplyConfig(true);
         } else {
+          // Notify the main app that JSON has changed
+          if (window.opener) {
+            window.opener.postMessage({
+              type: "json-changed-external",
+              session: sessionParamVal
+            }, "*");
+          }
           window.opener?.location?.reload();
         }
         window.close();

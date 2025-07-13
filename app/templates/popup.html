@@ -492,7 +492,7 @@
           </span>
         </div>
 
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.6 dev</div>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.7</div>
       </div>
     </div>
 
@@ -1044,6 +1044,11 @@
         
         // Always update session indicator after all changes
         updateSessionIndicator();
+      } else if (event.data.type === "json-changed-external") {
+        console.log("🔄 Received external JSON change notification:", event.data);
+        // Force reload session state from JSON
+        lastKnownSessionState = null; // Reset to force reload
+        loadSessionState();
       } else if (event.data.type === "reset-to-default") {
         console.log("🔄 Received reset-to-default message from:", event.origin);
         console.log("🔄 Message data:", event.data);
