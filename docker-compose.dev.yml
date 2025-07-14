@@ -9,7 +9,7 @@
 ## docker compose -f docker-compose.dev.yml -p facilitator-dev up 
 ## ------------------- end ----------------
 services:
-  facilitator:
+  ddtimer:
     platform: linux/amd64
     image: lancel00zz/ddtimer:latest
     pull_policy: always
