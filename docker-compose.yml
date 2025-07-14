@@ -8,17 +8,18 @@
 services:
   facilitator:
     platform: linux/amd64
-    image: lancel00zz/facilitator-timer-app:latest
+    image: lancel00zz/ddtimer:latest
     pull_policy: always
     ports:
       - "5050:5050"
     restart: unless-stopped
     environment:
-      - DD_ENV=production
-      - DD_SERVICE=facilitator-timer
+      - FLASK_ENV=production
+      - DD_ENV=prod-local
+      - DD_SERVICE=ddtimer
       - DD_VERSION=4.8
     networks:
-      - facilitator-network
+      - ddtimer-network
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
@@ -30,8 +31,10 @@ services:
       - DD_LOGS_ENABLED=true
       - DD_PROCESS_AGENT_ENABLED=true
       - DD_CONTAINER_EXCLUDE=name:datadog-agent
-      - DD_HOSTNAME=facilitator-prod
-      - DD_ENV=production
+      - DD_HOSTNAME=ddtimer-agent-prod-local
+      - DD_ENV=prod-local
+      - DD_SERVICE=ddtimer
+      - DD_VERSION=4.8
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
