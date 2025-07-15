@@ -38,3 +38,6 @@ instance/
 *.pid
 *.sock
 debug.log
+
+# Fly.io
+DDTimerOnline/
