@@ -6,7 +6,7 @@
 ## docker compose -f docker-compose.yml -p facilitator-prod up -d
 ## ------------------- end ----------------
 services:
-  facilitator:
+  ddtimer:
     platform: linux/amd64
     image: lancel00zz/ddtimer:latest
     pull_policy: always
@@ -36,6 +36,8 @@ services:
       - DD_ENV=prod-local
       - DD_SERVICE=ddtimer
       - DD_VERSION=4.8
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python"}]'  
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
