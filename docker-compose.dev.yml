@@ -24,6 +24,8 @@ services:
       - DD_ENV=dev-local
       - DD_SERVICE=ddtimer
       - DD_VERSION=4.8
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python"}]'
     networks:
       - ddtimer-network
 
@@ -42,8 +44,6 @@ services:
       - DD_ENV=dev-local
       - DD_SERVICE=ddtimer
       - DD_VERSION=4.8
-    labels:
-      com.datadoghq.ad.logs: '[{"source": "python"}]'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
