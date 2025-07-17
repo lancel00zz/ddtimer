@@ -25,7 +25,7 @@ services:
       - DD_SERVICE=ddtimer
       - DD_VERSION=4.8
     labels:
-      com.datadoghq.ad.logs: '[{"source": "python"}]'
+      com.datadoghq.ad.logs: '[{"source": "docker"}]'
     networks:
       - ddtimer-network
 
