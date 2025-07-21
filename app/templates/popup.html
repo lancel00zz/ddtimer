@@ -492,7 +492,7 @@
           </span>
         </div>
 
-        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.9</div>
+        <div class="qr-label">(c) Patrick Zakher - Facilitator Timer v4.9.5</div>
       </div>
     </div>
 
@@ -622,6 +622,7 @@
       }
       
       console.log(`🎯 Created ${numCount} ${color} dots with size ${px} (${useDatadog ? 'Datadog' : 'circle'})`);
+      updatePingingState();
     }
 
     // ─── Dynamic Contrast Detection ───
@@ -1379,6 +1380,7 @@
           setTimeout(showFinishState, 100); // Delay flag for animation
         }
       }, 1950);
+      updatePingingState();
     }
 
     function showFinishState() {
@@ -1434,6 +1436,36 @@
       }
     }
 
+    let scanIntervalId = null;
+
+    function shouldStartPinging() {
+      // Returns true if there are any red dots displayed
+      return document.querySelectorAll("#left-dots .dot.red, #left-dots img.dot-img[src*='datadog_red']").length > 0;
+    }
+
+    function startPingingIfNeeded() {
+      if (scanIntervalId === null && shouldStartPinging()) {
+        scanIntervalId = setInterval(checkForNewScans, 2000);
+        // console.log("Started pinging for scans");
+      }
+    }
+
+    function stopPinging() {
+      if (scanIntervalId !== null) {
+        clearInterval(scanIntervalId);
+        scanIntervalId = null;
+        // console.log("Stopped pinging for scans");
+      }
+    }
+
+    function updatePingingState() {
+      if (shouldStartPinging()) {
+        startPingingIfNeeded();
+      } else {
+        stopPinging();
+      }
+    }
+
     // Centralized session management on page load
     window.addEventListener("DOMContentLoaded", async () => {
       // Determine session from URL or sessionStorage
@@ -1464,60 +1496,58 @@
       updateButtonsLayout();
       
       // Start JSON synchronization monitoring
-      startJsonSync();
+      // startJsonSync(); // REMOVED
+      updatePingingState();
     });
 
-    // Start scan checking
-    setInterval(checkForNewScans, 2000);
-    
     // ─── JSON Synchronization ───
     let lastKnownSessionState = null;
-    let jsonSyncInterval = null;
+    // let jsonSyncInterval = null; // REMOVED
     let openedSettingsWindows = [];
     
     // Function to check if JSON has changed externally
-    async function checkForJsonChanges() {
-      try {
-        const session = getCurrentSession();
-        if (!session || session === "default") return; // Skip for default session
+    // async function checkForJsonChanges() { // REMOVED
+    //   try {
+    //     const session = getCurrentSession();
+    //     if (!session || session === "default") return; // Skip for default session
         
-        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(session)}`);
-        if (resp.ok) {
-          const currentJsonState = await resp.json();
+    //     const resp = await fetch(`/api/session-state?session=${encodeURIComponent(session)}`);
+    //     if (resp.ok) {
+    //       const currentJsonState = await resp.json();
           
-          // Compare with last known state
-          if (lastKnownSessionState && JSON.stringify(currentJsonState) !== JSON.stringify(lastKnownSessionState)) {
-            console.log("🔄 JSON changed externally, reloading session state");
+    //       // Compare with last known state
+    //       if (lastKnownSessionState && JSON.stringify(currentJsonState) !== JSON.stringify(lastKnownSessionState)) {
+    //         console.log("🔄 JSON changed externally, reloading session state");
             
-            // Reload session state
-            Object.assign(sessionState, currentJsonState);
+    //         // Reload session state
+    //         Object.assign(sessionState, currentJsonState);
             
-            // Migrate old "datadog" to "datadog_bits" for backward compatibility
-            if (sessionState.dot_style === "datadog") {
-              sessionState.dot_style = "datadog_bits";
-              console.log("🔄 Migrated dot_style from 'datadog' to 'datadog_bits' for backward compatibility");
-            }
+    //         // Migrate old "datadog" to "datadog_bits" for backward compatibility
+    //         if (sessionState.dot_style === "datadog") {
+    //           sessionState.dot_style = "datadog_bits";
+    //           console.log("🔄 Migrated dot_style from 'datadog' to 'datadog_bits' for backward compatibility");
+    //         }
             
-            // Apply changes
-            applyAppearance();
-            applyTimer();
-            createDots(sessionState.red_teams || sessionState.teams || 0, "red", sessionState.dot_size);
-            createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+    //         // Apply changes
+    //         applyAppearance();
+    //         applyTimer();
+    //         createDots(sessionState.red_teams || sessionState.teams || 0, "red", sessionState.dot_size);
+    //         createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
             
-            // Notify settings window if open
-            notifySettingsWindowOfChange();
+    //         // Notify settings window if open
+    //         notifySettingsWindowOfChange();
             
-            // Update last known state
-            lastKnownSessionState = currentJsonState;
-          } else if (!lastKnownSessionState) {
-            // Initialize last known state
-            lastKnownSessionState = currentJsonState;
-          }
-        }
-      } catch (err) {
-        console.warn("Could not check for JSON changes:", err);
-      }
-    }
+    //         // Update last known state
+    //         lastKnownSessionState = currentJsonState;
+    //       } else if (!lastKnownSessionState) {
+    //         // Initialize last known state
+    //         lastKnownSessionState = currentJsonState;
+    //       }
+    //     }
+    //   } catch (err) {
+    //     console.warn("Could not check for JSON changes:", err);
+    //   }
+    // }
     
     // Function to notify settings window of changes
     function notifySettingsWindowOfChange() {
@@ -1541,20 +1571,20 @@
     }
     
     // Start JSON synchronization monitoring
-    function startJsonSync() {
-      if (jsonSyncInterval) {
-        clearInterval(jsonSyncInterval);
-      }
-      jsonSyncInterval = setInterval(checkForJsonChanges, 3000); // Check every 3 seconds
-    }
+    // function startJsonSync() { // REMOVED
+    //   if (jsonSyncInterval) {
+    //     clearInterval(jsonSyncInterval);
+    //   }
+    //   jsonSyncInterval = setInterval(checkForJsonChanges, 3000); // Check every 3 seconds
+    // }
     
     // Stop JSON synchronization monitoring
-    function stopJsonSync() {
-      if (jsonSyncInterval) {
-        clearInterval(jsonSyncInterval);
-        jsonSyncInterval = null;
-      }
-    }
+    // function stopJsonSync() { // REMOVED
+    //   if (jsonSyncInterval) {
+    //     clearInterval(jsonSyncInterval);
+    //     jsonSyncInterval = null;
+    //   }
+    // }
     
     // Enhanced saveSessionState to update lastKnownSessionState
     const originalSaveSessionState = saveSessionState;
