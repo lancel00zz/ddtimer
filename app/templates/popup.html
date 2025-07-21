@@ -1191,6 +1191,7 @@
       await saveSessionState();
       const currentSession = getCurrentSession();
       fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
+      updatePingingState(); // Ensure pinging state is updated after all changes
     });
 
     configBtn.addEventListener("click", () => {
