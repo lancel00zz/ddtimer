@@ -28,6 +28,7 @@ services:
       - DD_AGENT_HOST=datadog-agent
       - DD_TRACE_AGENT_PORT=8126
       - DD_TRACE_ENABLED=true
+      - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
     labels:
       com.datadoghq.ad.logs: '[{"source": "docker"}]'
     networks:
