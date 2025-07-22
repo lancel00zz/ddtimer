@@ -12,7 +12,7 @@ services:
   ddtimer:
 #    platform: linux/amd64
 #    image: lancel00zz/ddtimer:latest
-    image: ddtimer-dev:latest
+    image: ddtimer:latest
 #    pull_policy: always
     ports:
       - "5056:5050"
@@ -30,6 +30,18 @@ services:
       - DD_TRACE_ENABLED=true
     labels:
       com.datadoghq.ad.logs: '[{"source": "docker"}]'
+    networks:
+      - ddtimer-network
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ddtimerdb
+      POSTGRES_USER: ddtimer
+      POSTGRES_PASSWORD: ddtimerpassword
+    volumes:
+      - db_data:/var/lib/postgresql/data
     networks:
       - ddtimer-network
 
@@ -60,3 +72,6 @@ services:
 networks:
   ddtimer-network:
     driver: bridge
+
+volumes:
+  db_data:
