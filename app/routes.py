@@ -1,4 +1,3 @@
-# ... existing imports ...
 import io
 import os
 import json
@@ -41,7 +40,8 @@ def _load_default_from_file() -> dict:
 # --- Database-backed session state helpers ---
 def get_session_state(session_id):
     record = SessionState.query.filter_by(session_id=session_id).first()
-    return record.state if record else {}
+    # Always return a dict, never None
+    return record.state if record and record.state is not None else {}
 
 def set_session_state(session_id, state):
     record = SessionState.query.filter_by(session_id=session_id).first()
@@ -75,11 +75,13 @@ def edit_config():
         return jsonify({"new_session": None}), 200
 
     session_id = request.args.get("session", "default")
+    # If no session ID or "default", always load golden standard
     if not session_id or session_id == "default":
         content = _load_golden_standard()
     else:
         content = get_session_state(session_id)
-        if content is None:
+        # If no session data, fallback to golden standard
+        if not content:
             content = _load_golden_standard()
     pretty = json.dumps(content, indent=2)
     return render_template("edit-config.html", config_content=pretty)
