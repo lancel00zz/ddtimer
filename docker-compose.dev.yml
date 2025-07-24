@@ -58,7 +58,7 @@ services:
       - ddtimer-network
 
   datadog-agent:
-    image: gcr.io/datadoghq/agent:latest
+    image: gcr.io/datadoghq/agent:7.67.0
     platform: linux/amd64
     environment:
       - DD_API_KEY=${DD_API_KEY}
