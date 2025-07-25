@@ -43,17 +43,19 @@ services:
   # Or, for dev, you can mount it directly:
   #   - ./postgresql.conf:/var/lib/postgresql/data/postgresql.conf:ro
   # This ensures 'shared_preload_libraries = "pg_stat_statements"' is set for Datadog DBM.
+  # username: datadog password: datadogpassword
   # ----------------------------------------------------------
   db:
     image: postgres:15
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: ddtimerdb
       POSTGRES_USER: ddtimer
       POSTGRES_PASSWORD: ddtimerpassword
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./postgresql.conf:/var/lib/postgresql/data/postgresql.conf:ro
     networks:
       - ddtimer-network
 
