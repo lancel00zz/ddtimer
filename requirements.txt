@@ -11,3 +11,4 @@ qrcode[pil]
 ddtrace==2.10.0
 flask_sqlalchemy
 psycopg2-binary
+requests

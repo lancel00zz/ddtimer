@@ -1,0 +1,171 @@
+@.env
+
+### 🔍 BASIC APM QUERIES
+
+### All recent spans (basic query that works)
+GET https://api.datadoghq.com/api/v2/spans/events
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### All ddtimer service spans (last hour)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 🚨 ERROR ANALYSIS
+
+### ddtimer spans with errors only
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=status:error
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### All error spans (any service)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[query]=status:error
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 🐌 PERFORMANCE ANALYSIS
+
+### Slow ddtimer spans (>1000ms)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=@duration:>1000000000
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### Very slow spans (>5000ms)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=@duration:>5000000000
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### Top 10 highest latency traces
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&sort=-duration&page[limit]=10
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 🌐 HTTP REQUESTS & ENDPOINTS
+
+### Flask HTTP requests only
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[operation_name]=flask.request
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### Server-side spans (web requests)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=span.kind:server
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### HTTP 4xx errors
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=@http.status_code:[400 TO 499]
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### HTTP 5xx errors
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=@http.status_code:[500 TO 599]
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 🗄️ DATABASE QUERIES
+
+### All SQL/database spans
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=span.type:sql
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### PostgreSQL spans specifically
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=component:psycopg
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### Slow database queries (>500ms)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=span.type:sql AND @duration:>500000000
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 📊 SERVICE OVERVIEW & STATISTICS
+
+### All APM services
+GET https://api.datadoghq.com/api/v1/apm/services
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### Service map (dependencies)
+GET https://api.datadoghq.com/api/v1/apm/service-map
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### ddtimer service statistics
+GET https://api.datadoghq.com/api/v1/apm/services/ddtimer/stats
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 🔍 SPECIFIC TRACE INVESTIGATIONS
+
+### Search by trace ID (replace TRACE_ID_HERE)
+# GET https://api.datadoghq.com/api/v2/spans/events?filter[query]=trace_id:TRACE_ID_HERE
+# DD-API-KEY: {{DD_API_KEY}}
+# DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### Search spans by resource name (e.g., specific endpoint)
+# GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&filter[query]=resource_name:"GET /ping"
+# DD-API-KEY: {{DD_API_KEY}}
+# DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 📈 SAMPLING & LIMITS
+
+### First 50 spans (default)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&page[limit]=50
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### Just 5 spans (for quick testing)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer&page[limit]=5
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
+
+###
+
+### 🕐 TIME-BASED QUERIES (using environment variables)
+
+### Recent spans using env vars (if working)
+GET https://api.datadoghq.com/api/v2/spans/events?filter[service]=ddtimer
+DD-API-KEY: {{DD_API_KEY}}
+DD-APPLICATION-KEY: {{DD_APPLICATION_KEY}}
