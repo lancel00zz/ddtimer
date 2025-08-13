@@ -1,0 +1,14 @@
+#rem pza
+init_config:
+
+instances:
+  - dbm: true
+    host: db
+    port: 5432
+    username: datadog
+    password: datadogpassword
+    dbname: ddtimerdb
+    log_level: debug
+    tags:
+      - env:dev-local
+      - service:postgres

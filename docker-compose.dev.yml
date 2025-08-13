@@ -12,7 +12,7 @@ services:
   ddtimer:
 #    platform: linux/amd64
 #    image: lancel00zz/ddtimer:latest
-    image: ddtimer-dev:latest
+    image: ddtimer:latest
 #    pull_policy: always
     ports:
       - "5056:5050"
@@ -28,13 +28,39 @@ services:
       - DD_AGENT_HOST=datadog-agent
       - DD_TRACE_AGENT_PORT=8126
       - DD_TRACE_ENABLED=true
+      - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
     labels:
       com.datadoghq.ad.logs: '[{"source": "docker"}]'
     networks:
       - ddtimer-network
 
+
+# ----------------------------------------------------------
+  # IMPORTANT:
+  # If you ever delete the db_data volume (e.g., with `docker compose down -v`),
+  # you MUST copy your custom postgresql.conf into the new volume/container:
+  #   docker cp ./postgresql.conf <db_container_id>:/var/lib/postgresql/data/postgresql.conf
+  # Or, for dev, you can mount it directly:
+  #   - ./postgresql.conf:/var/lib/postgresql/data/postgresql.conf:ro
+  # This ensures 'shared_preload_libraries = "pg_stat_statements"' is set for Datadog DBM.
+  # username: datadog password: datadogpassword
+  # ----------------------------------------------------------
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ddtimerdb
+      POSTGRES_USER: ddtimer
+      POSTGRES_PASSWORD: ddtimerpassword
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - ddtimer-network
+
   datadog-agent:
-    image: gcr.io/datadoghq/agent:latest
+    image: gcr.io/datadoghq/agent:7.67.0
     platform: linux/amd64
     environment:
       - DD_API_KEY=${DD_API_KEY}
@@ -53,6 +79,7 @@ services:
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./datadog-config/postgres.d:/etc/datadog-agent/conf.d/postgres.d:ro
     restart: unless-stopped
     networks:
       - ddtimer-network
@@ -60,3 +87,6 @@ services:
 networks:
   ddtimer-network:
     driver: bridge
+
+volumes:
+  db_data:
