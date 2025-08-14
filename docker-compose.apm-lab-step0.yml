@@ -1,17 +1,12 @@
-## step0 of the apm bug-lab
-name: ddtimer-dev
+## APM Lab - Step 0: Clean Environment
+## No Datadog Agent, No APM instrumentation
+name: apm-lab-step0
 services:
   ddtimer:
-#    platform: linux/amd64
-#    image: lancel00zz/ddtimer:latest
-    image: ddtimer:latest
-#    pull_policy: always
+    image: lancel00zz/ddtimer:apm-lab-step0
     ports:
-      - "5056:5050"
-    restart: unless-stopped      
-    volumes:
-    ## it loads dev environment folders inside the container - so it is a direct and live link to them
-      - ./:/app
+      - "5049:5050"
+    restart: unless-stopped
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
@@ -20,13 +15,11 @@ services:
     networks:
       - ddtimer-network
 
-
-
   db:
     image: postgres:15
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5439:5432"
     environment:
       POSTGRES_DB: ddtimerdb
       POSTGRES_USER: ddtimer
@@ -35,7 +28,6 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - ddtimer-network
-
 
 networks:
   ddtimer-network:

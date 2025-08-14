@@ -5,6 +5,7 @@
 ## or in verbose mode (in terminal with an ongoing console):
 ## docker compose -f docker-compose.yml -p facilitator-prod up -d
 ## ------------------- end ----------------
+name: ddtimer-prod-local
 services:
   ddtimer:
     platform: linux/amd64
