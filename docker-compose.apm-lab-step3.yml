@@ -1,5 +1,5 @@
-## APM Lab - Step 2: Full APM Instrumentation
-## Infrastructure monitoring + APM traces with automatic instrumentation
+## APM Lab - Step 3: Optimized APM Performance
+## Same as Step 2 but with performance optimizations (reduced duplicate calls)
 name: apm-lab-step3
 services:
   ddtimer:
@@ -15,7 +15,7 @@ services:
       - DD_TRACE_ENABLED=true
       - DD_SERVICE=ddtimer
       - DD_ENV=lab
-      - DD_VERSION=step2
+      - DD_VERSION=step3
       - DD_AGENT_HOST=datadog-agent
       - DD_TRACE_AGENT_PORT=8126
     labels:
@@ -60,7 +60,7 @@ services:
       
       # Global Environment Tags
       - DD_ENV=lab
-      - DD_TAGS=version:step2 team:training
+      - DD_TAGS=version:step3 team:training
     volumes:
       # Essential volume mounts (cross-platform compatible)
       - /var/run/docker.sock:/var/run/docker.sock:ro
