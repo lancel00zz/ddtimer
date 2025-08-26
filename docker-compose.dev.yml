@@ -10,10 +10,9 @@
 ## ------------------- end ----------------
 services:
   ddtimer:
-#    platform: linux/amd64
-#    image: lancel00zz/ddtimer:latest
+    platform: linux/amd64
+    build: .
     image: ddtimer:latest
-#    pull_policy: always
     ports:
       - "5056:5050"
     restart: unless-stopped      
@@ -33,8 +32,6 @@ services:
       com.datadoghq.ad.logs: '[{"source": "docker"}]'
     networks:
       - ddtimer-network
-
-
 # ----------------------------------------------------------
   # IMPORTANT:
   # If you ever delete the db_data volume (e.g., with `docker compose down -v`),
