@@ -11,8 +11,8 @@
 services:
   ddtimer:
     platform: linux/amd64
-    build: .
-    image: ddtimer:latest
+    image: lancel00zz/ddtimer:latest
+    pull_policy: always
     ports:
       - "5056:5050"
     restart: unless-stopped      
