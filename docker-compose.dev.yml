@@ -10,13 +10,13 @@
 ## ------------------- end ----------------
 services:
   ddtimer:
-#    platform: linux/amd64
-#    image: lancel00zz/ddtimer:latest
-    image: ddtimer:latest
-#    pull_policy: always
+    platform: linux/amd64
+    image: lancel00zz/ddtimer:latest
+#    image: ddtimer:latest
+    pull_policy: always
     ports:
       - "5056:5050"
-    restart: unless-stopped      
+    restart: unless-stopped
     volumes:
     ## it loads dev environment folders inside the container - so it is a direct and live link to them
       - ./:/app
