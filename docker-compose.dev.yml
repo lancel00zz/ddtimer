@@ -1,12 +1,6 @@
-## this docker compose is for testing new dev. It does:
-## 1. pull the image mentioned below from dockerhub
-## 2. assign dev port (5056) to flask internal port (5050) - beware (falsed is forced to 5000 because of the last line of this file. Otherwise it would remain 5050 as defined in the dockerhub image!!)
-## 3. loads the dev environment (/Documents/Github/facilitator-app/...) inside the container. Gives you real access to the dev files to test!!
-## to access the file, use chrome localhost:5056 or <IP_address>:5056 (better for QRs)
 ## run the line below to create your environement:
 ## docker compose -f docker-compose.dev.yml -p facilitator-dev up -d
-## or, to see logs in realtime (annoying sometimes):
-## docker compose -f docker-compose.dev.yml -p facilitator-dev up 
+
 ## ------------------- end ----------------
 services:
   ddtimer:
@@ -21,15 +15,15 @@ services:
       - ./:/app
     environment:
       - FLASK_ENV=development
-      - DD_ENV=dev-local
+      - DD_ENV=dev
       - DD_SERVICE=ddtimer
-      - DD_VERSION=4.8
+      - DD_VERSION=5.1
       - DD_AGENT_HOST=datadog-agent
       - DD_TRACE_AGENT_PORT=8126
       - DD_TRACE_ENABLED=true
       - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
     labels:
-      com.datadoghq.ad.logs: '[{"source": "docker"}]'
+      com.datadoghq.ad.logs: '[{"source": "flask", "service": "ddtimer"}]'
     networks:
       - ddtimer-network
 # ----------------------------------------------------------
@@ -55,6 +49,9 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - ddtimer-network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "postgresql", "service": "ddtimer-db"}]'
+
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:7.67.0
@@ -63,14 +60,22 @@ services:
       - DD_API_KEY=${DD_API_KEY}
       - DD_SITE=datadoghq.com
       - DD_APM_ENABLED=true
+      - DD_APM_MAX_TRACES_PER_SECOND=1000        # Much lower limit
+      - DD_APM_ERROR_TPS=50                    # Higher error sampling
+      - DD_APM_DISABLE_RARE_SAMPLER=false     # Keep rare sampler for errors
       - DD_LOGS_ENABLED=true
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
       - DD_PROCESS_AGENT_ENABLED=true
       - DD_CONTAINER_EXCLUDE=name:datadog-agent
       - DD_HOSTNAME=ddtimer-agent-dev-local
-      - DD_ENV=dev-local
-      - DD_SERVICE=ddtimer
-      - DD_VERSION=4.9
+      - DD_ENV=dev
+      - DD_SERVICE=datadog-agent
+      - DD_VERSION=5.1
+# Add to datadog-agent service:
+    labels:
+      com.datadoghq.tags.environment: "dev"
+      com.datadoghq.tags.team: "development"
+      com.datadoghq.tags.project: "ddtimer"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro

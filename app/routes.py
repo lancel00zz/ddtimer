@@ -3,6 +3,8 @@ import os
 import json
 import qrcode
 import time
+import traceback                    # Add this line
+from ddtrace import tracer         # Add this line
 
 from pathlib import Path
 import random
@@ -187,6 +189,35 @@ def upload_background():
         except Exception as e:
             return jsonify({"error": f"Failed to save file: {str(e)}"}), 500
     return jsonify({"error": "Invalid file"}), 400
+
+@main.route("/force-error")
+def force_error():
+    """Route to force different types of errors for testing"""
+    error_type = request.args.get('type', 'db')
+    
+    # Get the current span FIRST
+    span = tracer.current_span()
+    
+    if error_type == 'db':
+        try:
+            db.session.execute('SELECT * FROM non_existent_table')
+        except Exception as e:
+            # Tag the error immediately
+            if span:
+                span.set_tag('error.type', type(e).__name__)
+                span.set_tag('error.message', str(e))
+                span.set_tag('error.stack', traceback.format_exc())
+                span.error = True  # Try True instead of 1
+            raise
+    elif error_type == 'exception':
+        # Tag error BEFORE raising
+        if span:
+            span.set_tag('error.type', 'ValueError')
+            span.set_tag('error.message', 'Forced error for testing')
+            span.error = True
+        raise ValueError("Forced error for testing")
+    
+    return "This shouldn't be reached"
 
 def _load_golden_standard() -> dict:
     gs_path = Path("config/golden_standard.json")
