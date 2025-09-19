@@ -528,6 +528,15 @@
     </div>
   </div>
 
+  <!-- Standalone edit-config link positioned at bottom right -->
+  <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+    <a href="#" id="edit-config-link" 
+       style="color:#7c3aed; text-decoration:underline; font-size:13px; font-weight:500; 
+              background: rgba(255,255,255,0.9); padding: 8px 12px; border-radius: 6px; 
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1); backdrop-filter: blur(4px);" 
+       onclick="openEditConfig(event)">edit-config JSON</a>
+  </div>
+
   <script>
     let currentBackgroundImage = null;
     let prefill = {};
@@ -1237,6 +1246,35 @@
     window.addEventListener("beforeunload", () => {
       stopJsonPolling();
     });
+    
+    // Edit Config function
+    function openEditConfig(event) {
+      event.preventDefault();
+      const width = 600;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) * 0.25;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      // Get current session ID from the form
+      const sessionId = document.getElementById("session-id").value.trim() || "default";
+      let url = "/edit-config";
+      if (sessionId && sessionId !== "default") {
+        url += "?session=" + encodeURIComponent(sessionId);
+      }
+      
+      // Open edit-config as child of settings window (this window)
+      const editConfigWindow = window.open(url, "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
+      
+      // When edit-config closes, keep focus on settings window
+      if (editConfigWindow) {
+        const checkClosed = setInterval(() => {
+          if (editConfigWindow.closed) {
+            clearInterval(checkClosed);
+            window.focus(); // Return focus to settings window
+          }
+        }, 1000);
+      }
+    }
   </script>
 </body>
 </html>
