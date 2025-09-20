@@ -898,15 +898,12 @@
       applyAppearance();
       applyTimer();
       
-      // Recreate dots but preserve the current state
-      const remainingRedDots = Math.max(0, sessionState.red_teams - currentGreenDots);
-      const actualGreenDots = Math.min(currentGreenDots, sessionState.red_teams);
-      
-      createDots(remainingRedDots, "red", sessionState.dot_size);
-      createDots(actualGreenDots, "green", sessionState.dot_size);
+      // Create dots based on new settings values
+      createDots(sessionState.red_teams, "red", sessionState.dot_size);
+      createDots(sessionState.green_teams, "green", sessionState.dot_size);
       
       // Update lastSeenCount to match current green dots
-      lastSeenCount = actualGreenDots;
+      lastSeenCount = sessionState.green_teams;
       
       // Set button state correctly based on timer state
       if (wasTimerRunning && totalSeconds > 0) {
