@@ -17,7 +17,7 @@ services:
       - FLASK_ENV=production
       - DD_ENV=prod-local
       - DD_SERVICE=ddtimer
-      - DD_VERSION=4.8
+      - DD_VERSION=5.1
     labels:
       com.datadoghq.ad.logs: '[{"source": "docker"}]'
     networks:
@@ -37,7 +37,7 @@ services:
       - DD_HOSTNAME=ddtimer-agent-prod-local
       - DD_ENV=prod-local
       - DD_SERVICE=ddtimer
-      - DD_VERSION=4.8
+      - DD_VERSION=5.1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
