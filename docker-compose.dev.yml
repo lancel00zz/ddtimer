@@ -1,7 +1,8 @@
 ## run the line below to create your environement:
-## docker compose -f docker-compose.dev.yml -p facilitator-dev up -d
-
+## docker compose -f docker-compose.dev.yml up -d
 ## ------------------- end ----------------
+name: ddtimer-developer-branch
+
 services:
   ddtimer:
     platform: linux/amd64
