@@ -46,13 +46,22 @@ def get_session_state(session_id):
     return record.state if record and record.state is not None else {}
 
 def set_session_state(session_id, state):
-    record = SessionState.query.filter_by(session_id=session_id).first()
-    if record:
-        record.state = state
-    else:
-        record = SessionState(session_id=session_id, state=state)
-        db.session.add(record)
-    db.session.commit()
+    print(f"🔧 DEBUG: Saving session '{session_id}' with state: {state}")
+    try:
+        record = SessionState.query.filter_by(session_id=session_id).first()
+        if record:
+            print(f"🔧 DEBUG: Updating existing session '{session_id}'")
+            record.state = state
+        else:
+            print(f"🔧 DEBUG: Creating new session '{session_id}'")
+            record = SessionState(session_id=session_id, state=state)
+            db.session.add(record)
+        db.session.commit()
+        print(f"🔧 DEBUG: Session '{session_id}' saved successfully")
+    except Exception as e:
+        print(f"❌ ERROR: Failed to save session '{session_id}': {e}")
+        db.session.rollback()
+        raise
 
 # --- Routes ---
 
@@ -95,9 +104,12 @@ def api_session_state():
         state = get_session_state(session_id)
         return jsonify(state)
     elif request.method == "POST":
+        print(f"🔧 DEBUG: POST /api/session-state called for session '{session_id}'")
         try:
             data = request.get_json(force=True)
+            print(f"🔧 DEBUG: Received data: {data}")
         except Exception as e:
+            print(f"❌ ERROR: Invalid JSON in POST request: {e}")
             return jsonify({"error": f"Invalid JSON: {e}"}), 400
         set_session_state(session_id, data)
         return jsonify({"ok": True})

@@ -935,7 +935,7 @@
         if (qrImg) qrImg.src = "/qr-image";
       }
       
-      console.log("🔧 Settings applied - Preserved dot state: red=" + remainingRedDots + ", green=" + actualGreenDots);
+      console.log("🔧 Settings applied - Dot state: red=" + sessionState.red_teams + ", green=" + sessionState.green_teams);
       const currentSession = getCurrentSession();
       fetch(`/reset?session=${encodeURIComponent(currentSession)}`, { method: "POST" });
     }
@@ -943,11 +943,18 @@
     async function saveSessionState() {
       try {
         const session = getCurrentSession();
-        await fetch(`/api/session-state?session=${encodeURIComponent(session)}`, {
+        console.log(`🔧 CLIENT: Saving session "${session}" with state:`, sessionState);
+        const response = await fetch(`/api/session-state?session=${encodeURIComponent(session)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(sessionState)
         });
+        console.log(`🔧 CLIENT: Save response status: ${response.status}`);
+        if (!response.ok) {
+          console.error(`🔧 CLIENT: Save failed with status ${response.status}`);
+        } else {
+          console.log(`🔧 CLIENT: Session "${session}" saved successfully`);
+        }
       } catch (err) {
         console.warn("Failed to save session state:", err);
       }
@@ -989,7 +996,12 @@
               createDots(sessionState.red_teams || sessionState.teams || 0, "red", sessionState.dot_size);
               createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
             } else {
-              // Fallback to golden standard if session data is empty
+              // Fallback to golden standard if session data is empty (invalid session)
+              
+              // Clear invalid session from storage and URL (like double reset does)
+              sessionStorage.removeItem("session");
+              updateAddressBar("");
+              
               const gsResp = await fetch('/api/golden-standard');
               if (gsResp.ok) {
                 const gsData = await gsResp.json();
