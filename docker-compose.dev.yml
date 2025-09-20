@@ -8,6 +8,7 @@ services:
     platform: linux/amd64
     image: lancel00zz/ddtimer:5.1
     pull_policy: always
+    command: ["./startup.sh"]  # ← This overrides the Dockerfile CMD and initializes the database
     ports:
       - "5056:5050"
     restart: unless-stopped

@@ -990,7 +990,6 @@
               createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
             } else {
               // Fallback to golden standard if session data is empty
-              console.log("🔄 Session data is empty, falling back to golden standard");
               const gsResp = await fetch('/api/golden-standard');
               if (gsResp.ok) {
                 const gsData = await gsResp.json();
@@ -1002,8 +1001,7 @@
               }
             }
           } else {
-            // Fallback to golden standard if session doesn't exist or is invalid
-            console.log(`🔄 Invalid session ID "${session}", clearing URL and falling back to golden standard`);
+            // Fallback to golden standard if session doesn't exist or server error
             
             // Clear invalid session from storage and URL (like double reset does)
             sessionStorage.removeItem("session");
