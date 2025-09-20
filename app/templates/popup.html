@@ -898,15 +898,12 @@
       applyAppearance();
       applyTimer();
       
-      // Recreate dots but preserve the current state
-      const remainingRedDots = Math.max(0, sessionState.red_teams - currentGreenDots);
-      const actualGreenDots = Math.min(currentGreenDots, sessionState.red_teams);
-      
-      createDots(remainingRedDots, "red", sessionState.dot_size);
-      createDots(actualGreenDots, "green", sessionState.dot_size);
+      // Create dots based on new settings values
+      createDots(sessionState.red_teams, "red", sessionState.dot_size);
+      createDots(sessionState.green_teams, "green", sessionState.dot_size);
       
       // Update lastSeenCount to match current green dots
-      lastSeenCount = actualGreenDots;
+      lastSeenCount = sessionState.green_teams;
       
       // Set button state correctly based on timer state
       if (wasTimerRunning && totalSeconds > 0) {
@@ -958,7 +955,9 @@
 
     async function loadSessionState() {
       try {
-        const session = getCurrentSession();
+        // Get session from URL parameter or sessionStorage directly
+        const urlSession = new URLSearchParams(window.location.search).get("session");
+        const session = urlSession || sessionStorage.getItem("session") || "";
         
         // If no session (default mode), always load golden standard
         if (!session || session === "default") {
@@ -1000,6 +999,26 @@
                 createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
                 createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
               }
+            }
+          } else {
+            // Fallback to golden standard if session doesn't exist or server error
+            
+            // Clear invalid session from storage and URL (like double reset does)
+            sessionStorage.removeItem("session");
+            updateAddressBar("");
+            
+            // Load golden standard
+            const gsResp = await fetch('/api/golden-standard');
+            if (gsResp.ok) {
+              const gsData = await gsResp.json();
+              Object.assign(sessionState, gsData);
+              applyAppearance();
+              applyTimer();
+              createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
+              createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+              
+              // Update session indicator to show no session
+              updateSessionIndicator();
             }
           }
         }
@@ -1497,12 +1516,15 @@
 
       // Update session indicator
       updateSessionIndicator();
-      updateAddressBar(session);
+      
+      // Get the current session after loadSessionState (might have been cleared if invalid)
+      const currentSession = getCurrentSession();
+      updateAddressBar(currentSession === "default" ? "" : currentSession);
 
       // Initialize QR
       const qrImg = document.querySelector(".qr-section img");
       if (qrImg) {
-        qrImg.src = session ? `/qr-image?session=${encodeURIComponent(session)}` : "/qr-image";
+        qrImg.src = currentSession && currentSession !== "default" ? `/qr-image?session=${encodeURIComponent(currentSession)}` : "/qr-image";
       }
 
       // Update button visibility based on session validity

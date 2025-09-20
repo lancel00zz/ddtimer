@@ -1,12 +1,14 @@
 ## run the line below to create your environement:
-## docker compose -f docker-compose.dev.yml -p facilitator-dev up -d
-
+## docker compose -f docker-compose.dev.yml up -d
 ## ------------------- end ----------------
+name: ddtimer-developer-branch
+
 services:
   ddtimer:
     platform: linux/amd64
     image: lancel00zz/ddtimer:5.1
     pull_policy: always
+    command: ["./startup.sh"]  # ← This overrides the Dockerfile CMD and initializes the database
     ports:
       - "5056:5050"
     restart: unless-stopped

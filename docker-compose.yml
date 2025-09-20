@@ -3,8 +3,10 @@
 ## to build it:
 ## docker compose -f docker-compose.yml -p facilitator-prod up
 ## or in verbose mode (in terminal with an ongoing console):
-## docker compose -f docker-compose.yml -p facilitator-prod up -d
+## docker compose -f docker-compose.yml up -d
 ## ------------------- end ----------------
+name: ddtimer-local-production-branch
+
 services:
   ddtimer:
     platform: linux/amd64
