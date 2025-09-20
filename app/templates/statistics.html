@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Session Statistics</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <!-- Cache bust: {{ cache_bust }} -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 680px;
+      margin: 0 auto;
+      color: #333;
+    }
+
+    .statistics-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      width: 100%; /* Use full available width */
+      max-width: none; /* Remove width restriction */
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section-toggle {
+      width: 0;
+      height: 0;
+      border-left: 6px solid #4a5568;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .section-toggle.collapsed {
+      transform: rotate(0deg); /* Pointing right when collapsed */
+    }
+
+    .section-toggle:not(.collapsed) {
+      transform: rotate(90deg); /* Pointing down when expanded */
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #2d3748;
+      margin: 0;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-content {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .section-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .stats-placeholder {
+      padding: 20px;
+      text-align: center;
+      color: #718096;
+      font-style: italic;
+      background: #f7fafc;
+      border-radius: 8px;
+      border: 2px dashed #e2e8f0;
+    }
+
+    .stats-content {
+      padding: 0;
+    }
+
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-table th {
+      background: #f7fafc;
+      color: #2d3748;
+      font-weight: 600;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 2px solid #e2e8f0;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stats-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #4a5568;
+      font-size: 14px;
+    }
+
+    .stats-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .stats-table tr:hover {
+      background: #f7fafc;
+    }
+
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-item {
+      background: #f7fafc;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .no-data {
+      text-align: center;
+      color: #718096;
+      font-style: italic;
+      padding: 20px;
+    }
+
+    .chart-controls {
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #4a5568;
+    }
+
+    .radio-option input[type="radio"] {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .chart-container {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      height: 350px; /* Fixed height for Chart.js */
+      position: relative;
+    }
+
+    #scan-chart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .chart-title {
+      text-align: center;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      height: 200px;
+      border-bottom: 2px solid #e2e8f0;
+      border-left: 2px solid #e2e8f0;
+      padding: 10px;
+      width: 600px; /* Fixed width for all charts */
+      margin: 0 auto;
+    }
+
+    .chart-bar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px 2px 0 0;
+      min-width: 2px;
+      position: relative;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: end;
+    }
+
+    .chart-bar:hover {
+      opacity: 0.8;
+      transform: translateY(-2px);
+    }
+
+    .chart-bar-value {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: #4a5568;
+      background: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .chart-bar:hover .chart-bar-value {
+      opacity: 1;
+    }
+
+    .chart-x-axis {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding: 0 10px;
+      width: 600px; /* Fixed width matching chart */
+      margin: 10px auto 0 auto;
+      position: relative;
+    }
+
+    .chart-x-label {
+      font-size: 11px;
+      color: #718096;
+      text-align: center;
+      min-width: 30px;
+    }
+
+    .chart-y-axis {
+      position: absolute;
+      left: -40px;
+      top: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: space-between;
+      padding: 10px 0;
+    }
+
+    .chart-y-label {
+      font-size: 11px;
+      color: #718096;
+      text-align: right;
+      width: 30px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      margin-left: 50px;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        font-size: 12pt;
+        line-height: 1.4;
+      }
+      
+      .sticky-buttons {
+        display: none !important;
+      }
+      
+      .statistics-card {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+        page-break-inside: avoid;
+      }
+      
+      .section-content {
+        max-height: none !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      
+      .section-content.collapsed {
+        max-height: none !important;
+        opacity: 1 !important;
+      }
+      
+      .section-toggle {
+        display: none !important;
+      }
+      
+      .stats-table {
+        border: 1px solid #333;
+      }
+      
+      .stats-table th,
+      .stats-table td {
+        border: 1px solid #333;
+        padding: 8px;
+      }
+      
+      .stat-item {
+        border: 1px solid #ccc;
+        background: #f9f9f9 !important;
+      }
+      
+      h1 {
+        color: black !important;
+      }
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .sticky-buttons {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: transparent;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 16px 0 8px 0;
+      margin-bottom: 8px;
+    }
+
+    button {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button.secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+
+    button.secondary:hover {
+      background: #cbd5e0;
+    }
+
+    button.primary {
+      background: #667eea;
+      color: white;
+    }
+
+    button.primary:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    button.disabled {
+      background: #f7fafc;
+      color: #a0aec0;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    button.disabled:hover {
+      background: #f7fafc;
+      transform: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="button-row sticky-buttons">
+    <button class="primary disabled" onclick="printStatistics()" disabled>Print</button>
+    <button class="primary" onclick="exportCSV()" id="export-btn" style="display: none;">Export CSV</button>
+    <button class="secondary" onclick="window.close()">Close</button>
+  </div>
+
+  <div class="statistics-card">
+    <div class="section-header" onclick="toggleSection('session-statistics')">
+      <div class="section-toggle" id="session-statistics-toggle"></div>
+      <div class="section-title">Session Statistics</div>
+    </div>
+    
+    <div class="section-content" id="session-statistics-content">
+      <div id="session-stats-loading" class="stats-placeholder">
+        📊 Loading session statistics...
+      </div>
+      <div id="session-stats-content" class="stats-content" style="display: none;">
+        <div class="stats-summary" id="stats-summary">
+          <!-- Summary stats will be populated here -->
+        </div>
+      </div>
+      <div id="session-stats-error" class="no-data" style="display: none;">
+        No statistics available for this session
+      </div>
+    </div>
+  </div>
+
+  <div class="statistics-card">
+    <div class="section-header" onclick="toggleSection('session-data')">
+      <div class="section-toggle collapsed" id="session-data-toggle"></div>
+      <div class="section-title">Session Data</div>
+    </div>
+
+    <div class="section-content collapsed" id="session-data-content">
+      <div id="session-data-loading" class="stats-placeholder">
+        📋 Loading session data...
+      </div>
+      <div id="session-data-table" class="stats-content" style="display: none;">
+        <table class="stats-table" id="scan-events-table">
+          <thead>
+            <tr>
+              <th>Dot #</th>
+              <th>Scan Time</th>
+            </tr>
+          </thead>
+          <tbody id="scan-events-tbody">
+            <!-- Scan events will be populated here -->
+          </tbody>
+        </table>
+      </div>
+      <div id="session-data-error" class="no-data" style="display: none;">
+        No scan data available for this session
+      </div>
+    </div>
+  </div>
+
+  <div class="statistics-card">
+    <div class="section-header" onclick="toggleSection('session-chart')">
+      <div class="section-toggle collapsed" id="session-chart-toggle"></div>
+      <div class="section-title">Session Chart</div>
+    </div>
+
+    <div class="section-content collapsed" id="session-chart-content">
+      <div id="session-chart-loading" class="stats-placeholder">
+        📈 Loading session chart...
+      </div>
+      <div id="session-chart-display" class="stats-content" style="display: none;">
+        <div class="chart-controls">
+          <label style="font-weight: 600; margin-right: 16px; color: #2d3748;">Aggregation Unit:</label>
+          <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="chart-aggregation" value="1" checked> 1 min</label>
+            <label class="radio-option"><input type="radio" name="chart-aggregation" value="2"> 2 min</label>
+            <label class="radio-option"><input type="radio" name="chart-aggregation" value="5"> 5 min</label>
+            <label class="radio-option"><input type="radio" name="chart-aggregation" value="10"> 10 min</label>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="scan-chart" width="600" height="300"></canvas>
+        </div>
+      </div>
+      <div id="session-chart-error" class="no-data" style="display: none;">
+        No chart data available for this session
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentSessionId = null;
+    let statisticsData = null;
+
+    function toggleSection(sectionId) {
+      const toggle = document.getElementById(`${sectionId}-toggle`);
+      const content = document.getElementById(`${sectionId}-content`);
+      
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggle.classList.remove('collapsed');
+      } else {
+        content.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+      }
+    }
+
+    function printStatistics() {
+      // Open browser print dialog
+      window.print();
+    }
+
+    function exportCSV() {
+      if (!statisticsData || !statisticsData.scan_events) {
+        alert('No data available to export');
+        return;
+      }
+
+      // Create CSV content
+      let csvContent = "Dot Number,Scan Time\n";
+      statisticsData.scan_events.forEach(event => {
+        csvContent += `${event.dot_number},${event.time_formatted}\n`;
+      });
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session_${currentSessionId}_scan_data.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    // Listen for window position message
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "position-statistics-window") {
+        const { left, top } = event.data;
+        window.moveTo(left, top);
+        
+        if (event.data.session_id) {
+          currentSessionId = event.data.session_id;
+          console.log("📊 Loading statistics for session:", currentSessionId);
+          loadStatisticsData(currentSessionId);
+        }
+      }
+    });
+
+    // Allow Escape to close window
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" || e.key === "Esc") {
+        e.preventDefault();
+        window.close();
+      }
+    });
+
+    let refreshInterval = null;
+
+    async function loadStatisticsData(sessionId) {
+      try {
+        console.log(`📊 Loading statistics for session: ${sessionId}`);
+        const response = await fetch(`/api/session-statistics?session=${encodeURIComponent(sessionId)}`);
+        
+        if (response.ok) {
+          statisticsData = await response.json();
+          console.log(`📊 Received statistics data:`, statisticsData);
+          console.log(`📊 Scan events count: ${statisticsData.scan_events ? statisticsData.scan_events.length : 0}`);
+          displayStatistics(statisticsData);
+          
+          // Start live updates every 2 seconds
+          if (!refreshInterval) {
+            refreshInterval = setInterval(() => {
+              loadStatisticsData(sessionId);
+            }, 2000);
+          }
+        } else {
+          console.error(`📊 API response not OK: ${response.status}`);
+          showError();
+        }
+      } catch (error) {
+        console.error('📊 Error loading statistics:', error);
+        showError();
+      }
+    }
+
+    // Clean up interval when window closes
+    window.addEventListener('beforeunload', () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    });
+
+    function displayStatistics(data) {
+      // Hide loading, show content
+      document.getElementById('session-stats-loading').style.display = 'none';
+      document.getElementById('session-data-loading').style.display = 'none';
+      document.getElementById('session-stats-content').style.display = 'block';
+      
+      // Show export button and enable print button
+      document.getElementById('export-btn').style.display = 'inline-block';
+      const printBtn = document.querySelector('button[onclick="printStatistics()"]');
+      printBtn.disabled = false;
+      printBtn.classList.remove('disabled');
+
+      // Helper function to format time in minutes and seconds
+      function formatTime(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = Math.round(totalSeconds % 60);
+        if (minutes === 0) {
+          return `${seconds}s`;
+        } else if (seconds === 0) {
+          return `${minutes}m`;
+        } else {
+          return `${minutes}m ${seconds}s`;
+        }
+      }
+
+      // Format session duration
+      const sessionDurationFormatted = formatTime(data.countdown_duration);
+      const avgTimeFormatted = formatTime(data.avg_completion_time * 60); // Convert back to seconds
+      const firstScanFormatted = formatTime(data.time_to_first_scan * 60);
+      const lastScanFormatted = formatTime(data.time_to_last_scan * 60);
+
+      // Display summary statistics
+      const summaryHtml = `
+        <div class="stat-item">
+          <div class="stat-value">${sessionDurationFormatted}</div>
+          <div class="stat-label">Session Time</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${data.starting_red_dots}</div>
+          <div class="stat-label">Starting Dots</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${data.finishing_green_dots}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${data.completion_rate}%</div>
+          <div class="stat-label">Completion Rate</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${avgTimeFormatted}</div>
+          <div class="stat-label">Avg Time</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${firstScanFormatted}</div>
+          <div class="stat-label">First Scan</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${lastScanFormatted}</div>
+          <div class="stat-label">Last Scan</div>
+        </div>
+      `;
+      document.getElementById('stats-summary').innerHTML = summaryHtml;
+
+      // Display scan events table
+      console.log(`📊 Displaying scan events. Count: ${data.scan_events ? data.scan_events.length : 0}`);
+      if (data.scan_events && data.scan_events.length > 0) {
+        console.log(`📊 First scan event:`, data.scan_events[0]);
+        document.getElementById('session-data-table').style.display = 'block';
+        const tbody = document.getElementById('scan-events-tbody');
+        tbody.innerHTML = data.scan_events.map(event => 
+          `<tr>
+            <td>${event.dot_number}</td>
+            <td>${event.time_formatted}</td>
+          </tr>`
+        ).join('');
+        console.log(`📊 Session data table populated with ${data.scan_events.length} events`);
+      } else {
+        console.log(`📊 No scan events, showing error message`);
+        document.getElementById('session-data-error').style.display = 'block';
+      }
+
+      // Display chart
+      displayChart(data);
+    }
+
+    function displayChart(data) {
+      // Hide loading, show chart
+      document.getElementById('session-chart-loading').style.display = 'none';
+      
+      if (data.scan_events && data.scan_events.length > 0) {
+        document.getElementById('session-chart-display').style.display = 'block';
+        
+        // Get current selected aggregation or default to 1
+        const selectedRadio = document.querySelector('input[name="chart-aggregation"]:checked');
+        const currentAggregation = selectedRadio ? parseInt(selectedRadio.value) : 1;
+        
+        // Generate chart with current selection
+        generateChart(data, currentAggregation);
+        
+        // Add event listeners for aggregation changes (only if not already added)
+        const radioButtons = document.querySelectorAll('input[name="chart-aggregation"]');
+        radioButtons.forEach(radio => {
+          // Remove existing listeners to prevent duplicates
+          radio.removeEventListener('change', handleAggregationChange);
+          radio.addEventListener('change', handleAggregationChange);
+        });
+        
+        function handleAggregationChange(e) {
+          if (e.target.checked) {
+            console.log(`📊 Aggregation changed to: ${e.target.value} minutes`);
+            generateChart(statisticsData, parseInt(e.target.value));
+          }
+        }
+      } else {
+        document.getElementById('session-chart-error').style.display = 'block';
+      }
+    }
+
+    let scanChart = null; // Global chart instance
+    
+    function generateChart(data, aggregationMinutes) {
+      const canvas = document.getElementById('scan-chart');
+      const ctx = canvas.getContext('2d');
+      const sessionDurationMinutes = Math.ceil(data.countdown_duration / 60);
+      
+      console.log(`🔥 Chart.js - Generating chart: ${aggregationMinutes}min aggregation, session duration: ${sessionDurationMinutes}min`);
+      
+      // Create time buckets
+      const buckets = [];
+      const bucketCount = Math.ceil(sessionDurationMinutes / aggregationMinutes);
+      
+      for (let i = 0; i < bucketCount; i++) {
+        const startTime = i * aggregationMinutes;
+        const endTime = Math.min((i + 1) * aggregationMinutes, sessionDurationMinutes);
+        buckets.push({
+          startTime,
+          endTime,
+          label: `${startTime}-${endTime}m`,
+          count: 0
+        });
+      }
+      
+      // Count scan events in each bucket
+      data.scan_events.forEach((event) => {
+        const eventMinute = Math.floor(event.time_relative / 60);
+        const bucketIndex = Math.floor(eventMinute / aggregationMinutes);
+        
+        if (bucketIndex < buckets.length) {
+          buckets[bucketIndex].count++;
+        }
+      });
+      
+      // Prepare Chart.js data
+      const labels = buckets.map(bucket => bucket.label);
+      const counts = buckets.map(bucket => bucket.count);
+      
+      // Session end label formatting
+      const sessionEndLabel = sessionDurationMinutes >= 60 ? 
+        `${Math.floor(sessionDurationMinutes / 60)}h${sessionDurationMinutes % 60 > 0 ? ` ${sessionDurationMinutes % 60}m` : ''}` : 
+        `${sessionDurationMinutes}m`;
+      
+      // Store session end label for use in callback
+      window.currentSessionEndLabel = sessionEndLabel;
+      
+      // Destroy existing chart if it exists
+      if (scanChart) {
+        scanChart.destroy();
+      }
+      
+      // Create new Chart.js chart
+      scanChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'QR Scans',
+            data: counts,
+            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+            borderColor: 'rgba(102, 126, 234, 1)',
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 0 // Disable animations to prevent repeating on refresh
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: `QR Scan Distribution (${aggregationMinutes}-minute intervals)`,
+              font: { size: 14, weight: 'bold' },
+              color: '#2d3748'
+            },
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: `Timeline: 0 → ${sessionEndLabel}`,
+                font: { size: 12 },
+                color: '#718096'
+              },
+              ticks: {
+                display: true,
+                maxRotation: 0, // Force horizontal labels
+                minRotation: 0, // Force horizontal labels
+                maxTicksLimit: 3, // Limit to exactly 3 ticks
+                callback: function(value, index, ticks) {
+                  // Show only 3 labels: start (0), middle (|), end (session duration)
+                  if (index === 0) {
+                    return '0';
+                  } else if (index === Math.floor(ticks.length / 2)) {
+                    return '|';
+                  } else if (index === ticks.length - 1) {
+                    return window.currentSessionEndLabel;
+                  }
+                  return ''; // Hide other labels
+                },
+                color: '#718096',
+                font: { size: 11 }
+              },
+              grid: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Scans',
+                font: { size: 12 },
+                color: '#718096'
+              },
+              ticks: {
+                stepSize: 1,
+                color: '#718096'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.1)'
+              }
+            }
+          },
+          elements: {
+            bar: {
+              borderWidth: 1
+            }
+          }
+        }
+      });
+      
+      console.log(`📊 Chart.js chart generated with ${buckets.length} bars`);
+    }
+
+    function showError() {
+      document.getElementById('session-stats-loading').style.display = 'none';
+      document.getElementById('session-data-loading').style.display = 'none';
+      document.getElementById('session-stats-error').style.display = 'block';
+      document.getElementById('session-data-error').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

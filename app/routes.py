@@ -24,13 +24,13 @@ from collections import defaultdict
 from datetime import datetime
 from threading import Lock
 
-from .models import SessionState
+from .models import SessionState, SessionStats, ScanEvent
 from . import db
 
 session_configs = defaultdict(lambda: _load_default_from_file())
 
 # In-memory session-scoped tracking for /done, /ping, /reset
-sessions = defaultdict(lambda: {"count": 0, "last_ping": datetime.now()})
+sessions = defaultdict(lambda: {"count": 0, "last_ping": datetime.now(), "start_time": None})
 
 main = Blueprint("main", __name__)
 
@@ -72,6 +72,18 @@ def home():
 @main.route("/settings")
 def settings():
     return render_template("settings.html")
+
+@main.route("/statistics")
+def statistics():
+    import time
+    timestamp = int(time.time())
+    return render_template("statistics.html", cache_bust=timestamp)
+
+@main.route("/statistics-v2")
+def statistics_v2():
+    import time
+    timestamp = int(time.time())
+    return render_template("statistics.html", cache_bust=timestamp)
 
 @main.route("/edit-config", methods=["GET", "POST"])
 def edit_config():
@@ -117,8 +129,34 @@ def api_session_state():
 @main.route("/done")
 def done():
     session_id = request.args.get("session", "default")
+    current_time = datetime.now()
+    
+    # Update in-memory counter
     sessions[session_id]["count"] += 1
-    sessions[session_id]["last_ping"] = datetime.now()
+    sessions[session_id]["last_ping"] = current_time
+    
+    # Record scan event in database if we have a start time
+    if sessions[session_id]["start_time"]:
+        scan_time_relative = int((current_time - sessions[session_id]["start_time"]).total_seconds())
+        try:
+            scan_event = ScanEvent(
+                session_id=session_id,
+                scan_time_relative=scan_time_relative
+            )
+            db.session.add(scan_event)
+            
+            # Update finishing_green_dots count
+            session_stats = SessionStats.query.filter_by(session_id=session_id).first()
+            if session_stats:
+                session_stats.finishing_green_dots = sessions[session_id]["count"]
+                session_stats.updated_at = current_time
+            
+            db.session.commit()
+            print(f"📊 Recorded scan event for session {session_id} at {scan_time_relative}s")
+        except Exception as e:
+            print(f"❌ Error recording scan event: {e}")
+            db.session.rollback()
+    
     return """
 <html>
   <head>
@@ -147,8 +185,47 @@ def ping():
 @main.route("/reset", methods=["POST"])
 def reset():
     session_id = request.args.get("session", "default")
+    current_time = datetime.now()
+    
+    # Reset in-memory counters
     sessions[session_id]["count"] = 0
-    sessions[session_id]["last_ping"] = datetime.now()
+    sessions[session_id]["last_ping"] = current_time
+    sessions[session_id]["start_time"] = current_time  # Mark timer start
+    
+    # Initialize or reset session stats in database
+    try:
+        # Get session configuration to determine initial values
+        session_state = get_session_state(session_id)
+        countdown_duration = (session_state.get('minutes', 0) * 60) + session_state.get('seconds', 0)
+        starting_red_dots = session_state.get('red_teams', 0)
+        
+        # Create or update session stats
+        session_stats = SessionStats.query.filter_by(session_id=session_id).first()
+        if session_stats:
+            # Update existing record
+            session_stats.countdown_duration = countdown_duration
+            session_stats.starting_red_dots = starting_red_dots
+            session_stats.finishing_green_dots = 0
+            session_stats.updated_at = current_time
+        else:
+            # Create new record
+            session_stats = SessionStats(
+                session_id=session_id,
+                countdown_duration=countdown_duration,
+                starting_red_dots=starting_red_dots,
+                finishing_green_dots=0
+            )
+            db.session.add(session_stats)
+        
+        # Clear any existing scan events for this session (fresh start)
+        ScanEvent.query.filter_by(session_id=session_id).delete()
+        
+        db.session.commit()
+        print(f"📊 Initialized session stats for {session_id}: {countdown_duration}s, {starting_red_dots} dots")
+    except Exception as e:
+        print(f"❌ Error initializing session stats: {e}")
+        db.session.rollback()
+    
     return "OK"
 
 @main.route("/qr-popup")
@@ -243,3 +320,55 @@ def _load_golden_standard() -> dict:
 @main.route("/api/golden-standard", methods=["GET"])
 def api_golden_standard():
     return jsonify(_load_golden_standard())
+
+@main.route("/api/session-statistics", methods=["GET"])
+def api_session_statistics():
+    session_id = request.args.get("session", "default")
+    
+    try:
+        # Get session stats
+        session_stats = SessionStats.query.filter_by(session_id=session_id).first()
+        if not session_stats:
+            return jsonify({"error": "No statistics found for this session"}), 404
+        
+        # Get scan events
+        scan_events = ScanEvent.query.filter_by(session_id=session_id).order_by(ScanEvent.scan_time_relative).all()
+        
+        # Format scan events for display
+        scan_data = []
+        for i, event in enumerate(scan_events, 1):
+            minutes = event.scan_time_relative // 60
+            seconds = event.scan_time_relative % 60
+            scan_data.append({
+                "dot_number": i,
+                "time_relative": event.scan_time_relative,
+                "time_formatted": f"{minutes}:{seconds:02d}"
+            })
+        
+        # Calculate metrics
+        completion_rate = (session_stats.finishing_green_dots / session_stats.starting_red_dots * 100) if session_stats.starting_red_dots > 0 else 0
+        
+        # Calculate average completion time (average of all scan times)
+        avg_completion_time = 0
+        if scan_events:
+            total_time = sum(event.scan_time_relative for event in scan_events)
+            avg_completion_time = total_time / len(scan_events)
+        
+        # Time to first and last scan
+        time_to_first_scan = scan_events[0].scan_time_relative if scan_events else 0
+        time_to_last_scan = scan_events[-1].scan_time_relative if scan_events else 0
+        
+        return jsonify({
+            "session_id": session_id,
+            "countdown_duration": session_stats.countdown_duration,
+            "starting_red_dots": session_stats.starting_red_dots,
+            "finishing_green_dots": session_stats.finishing_green_dots,
+            "completion_rate": round(completion_rate, 1),
+            "avg_completion_time": round(avg_completion_time / 60, 2),  # in minutes
+            "time_to_first_scan": round(time_to_first_scan / 60, 2),  # in minutes
+            "time_to_last_scan": round(time_to_last_scan / 60, 2),  # in minutes
+            "scan_events": scan_data
+        })
+    except Exception as e:
+        print(f"❌ Error fetching session statistics: {e}")
+        return jsonify({"error": "Failed to fetch statistics"}), 500
