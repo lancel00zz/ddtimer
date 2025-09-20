@@ -955,7 +955,9 @@
 
     async function loadSessionState() {
       try {
-        const session = getCurrentSession();
+        // Get session from URL parameter or sessionStorage directly
+        const urlSession = new URLSearchParams(window.location.search).get("session");
+        const session = urlSession || sessionStorage.getItem("session") || "";
         
         // If no session (default mode), always load golden standard
         if (!session || session === "default") {
@@ -988,6 +990,7 @@
               createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
             } else {
               // Fallback to golden standard if session data is empty
+              console.log("🔄 Session data is empty, falling back to golden standard");
               const gsResp = await fetch('/api/golden-standard');
               if (gsResp.ok) {
                 const gsData = await gsResp.json();
@@ -997,6 +1000,27 @@
                 createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
                 createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
               }
+            }
+          } else {
+            // Fallback to golden standard if session doesn't exist or is invalid
+            console.log(`🔄 Invalid session ID "${session}", clearing URL and falling back to golden standard`);
+            
+            // Clear invalid session from storage and URL (like double reset does)
+            sessionStorage.removeItem("session");
+            updateAddressBar("");
+            
+            // Load golden standard
+            const gsResp = await fetch('/api/golden-standard');
+            if (gsResp.ok) {
+              const gsData = await gsResp.json();
+              Object.assign(sessionState, gsData);
+              applyAppearance();
+              applyTimer();
+              createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
+              createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+              
+              // Update session indicator to show no session
+              updateSessionIndicator();
             }
           }
         }
@@ -1494,12 +1518,15 @@
 
       // Update session indicator
       updateSessionIndicator();
-      updateAddressBar(session);
+      
+      // Get the current session after loadSessionState (might have been cleared if invalid)
+      const currentSession = getCurrentSession();
+      updateAddressBar(currentSession === "default" ? "" : currentSession);
 
       // Initialize QR
       const qrImg = document.querySelector(".qr-section img");
       if (qrImg) {
-        qrImg.src = session ? `/qr-image?session=${encodeURIComponent(session)}` : "/qr-image";
+        qrImg.src = currentSession && currentSession !== "default" ? `/qr-image?session=${encodeURIComponent(currentSession)}` : "/qr-image";
       }
 
       // Update button visibility based on session validity
