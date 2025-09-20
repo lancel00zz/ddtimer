@@ -5,7 +5,7 @@
 services:
   ddtimer:
     platform: linux/amd64
-    image: lancel00zz/ddtimer:latest
+    image: lancel00zz/ddtimer:5.1
     pull_policy: always
     ports:
       - "5056:5050"
@@ -69,13 +69,8 @@ services:
       - DD_CONTAINER_EXCLUDE=name:datadog-agent
       - DD_HOSTNAME=ddtimer-agent-dev-local
       - DD_ENV=dev
-      - DD_SERVICE=datadog-agent
+      - DD_SERVICE=ddtimer
       - DD_VERSION=5.1
-# Add to datadog-agent service:
-    labels:
-      com.datadoghq.tags.environment: "dev"
-      com.datadoghq.tags.team: "development"
-      com.datadoghq.tags.project: "ddtimer"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro

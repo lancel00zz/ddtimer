@@ -467,19 +467,7 @@
         </button>
       </div>
 
-      <!-- Tools (config) button pinned bottom‑left via CSS -->
-      <button id="config-button"
-              class="secondary icon-only"
-              title="Admin: Edit JSON Config">
-        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
-             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round"
-             class="icon icon-tabler icon-tabler-settings">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
-          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
-        </svg>
-      </button>
+      <!-- Edit-config button removed - now available in Settings window -->
 
               <div class="qr-section">
           <img src="" alt="QR Code" onclick="openQrPopup()" style="cursor: pointer;">
@@ -535,7 +523,7 @@
     const optionsBtn = document.getElementById("options-button");
     const toggleBtn = document.getElementById("toggle-button");
     const resetBtn = document.getElementById("reset-button");
-    const configBtn = document.getElementById("config-button");
+    // configBtn removed - edit-config functionality moved to Settings window
     const timerDisplay = document.getElementById("timer-display");
     const buttonsContainer = document.querySelector(".buttons");
 
@@ -569,6 +557,43 @@
     function updateButtonsLayout() {
       const onlyMiddle = optionsBtn.classList.contains("hidden") && resetBtn.classList.contains("hidden");
       buttonsContainer.classList.toggle("single", onlyMiddle);
+    }
+
+    function updateButtonVisibility() {
+      const session = getCurrentSession();
+      const hasValidSession = session && session !== "default";
+      const hasContent = totalSeconds > 0 || sessionState.red_teams > 0 || sessionState.green_teams > 0;
+      
+      console.log("🔘 Button visibility check:", {
+        session,
+        hasValidSession,
+        totalSeconds,
+        red_teams: sessionState.red_teams,
+        green_teams: sessionState.green_teams,
+        hasContent
+      });
+      
+      if (!hasValidSession) {
+        // No session or invalid session: only show pen (options) button
+        console.log("🔘 Showing only pen button (no valid session)");
+        optionsBtn.classList.remove("hidden");
+        toggleBtn.classList.add("hidden");
+        resetBtn.classList.add("hidden");
+      } else if (hasContent) {
+        // Valid session with content: show all three buttons
+        console.log("🔘 Showing all three buttons (valid session + content)");
+        optionsBtn.classList.remove("hidden");
+        toggleBtn.classList.remove("hidden");
+        resetBtn.classList.remove("hidden");
+      } else {
+        // Valid session but no content: show only pen button
+        console.log("🔘 Showing only pen button (valid session but no content)");
+        optionsBtn.classList.remove("hidden");
+        toggleBtn.classList.add("hidden");
+        resetBtn.classList.add("hidden");
+      }
+      
+      updateButtonsLayout();
     }
 
     function formatTime(mins, secs) {
@@ -833,15 +858,8 @@
       totalSeconds = minutes * 60 + seconds;
       updateTimerDisplay();
       
-      // Update UI state
-      if (totalSeconds > 0 || sessionState.red_teams > 0 || sessionState.green_teams > 0) {
-        optionsBtn.classList.remove("hidden");
-        resetBtn.classList.remove("hidden"); // Show reset when there's content
-      } else {
-        optionsBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-      }
-      updateButtonsLayout();
+      // Update button visibility based on new logic
+      updateButtonVisibility();
     }
 
     function applySettings(data) {
@@ -1034,6 +1052,7 @@
               applyTimer();
               createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
               createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
+              updateButtonVisibility(); // Update buttons after golden standard reload
             }
           } catch (err) {
             console.warn("Could not reload golden standard:", err);
@@ -1045,6 +1064,9 @@
         
         // Always update session indicator after all changes
         updateSessionIndicator();
+        
+        // Critical: Update button visibility after all session changes are complete
+        updateButtonVisibility();
       } else if (event.data.type === "json-changed-external") {
         console.log("🔄 Received external JSON change notification:", event.data);
         // Force reload session state from JSON
@@ -1071,6 +1093,7 @@
             createDots(sessionState.red_teams || 0, "red", sessionState.dot_size);
             createDots(sessionState.green_teams || 0, "green", sessionState.dot_size);
             updateSessionIndicator();
+            updateButtonVisibility(); // Update buttons after reset to default
             console.log("✔️ Reset to golden standard completed");
           }
         } catch (err) {
@@ -1113,8 +1136,7 @@
         toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z"/></svg> Stop`;
         toggleBtn.classList.remove("primary-idle");
         toggleBtn.classList.add("primary-active");
-        resetBtn.classList.remove("hidden");
-        updateButtonsLayout();
+        updateButtonVisibility(); // Use new logic instead of always showing reset
         // Reset the reset state when timer starts
         resetState = "ready";
       } else {
@@ -1155,15 +1177,13 @@
         timerDisplay.classList.remove("flashing-red");
         // Restore proper font color after reset
         applyAppearance();
-        // Keep buttons visible for second reset option
-        optionsBtn.classList.remove("hidden");
-        resetBtn.classList.remove("hidden");
-        updateButtonsLayout();
+        // Update button visibility based on new logic
+        updateButtonVisibility();
         resetState = "restored";
         
       } else if (resetState === "restored") {
-        // Second click: Reset timer and teams to zero, keep visual preferences
-        console.log("🔄 Second reset: Clearing timer and teams, keeping visual preferences");
+        // Second click: Reset timer and teams to zero, clear session (back to no-session mode)
+        console.log("🔄 Second reset: Clearing timer, teams, and session (back to no-session mode)");
         totalSeconds = 0;
         updateTimerDisplay();
         createDots(0, "red", sessionState.dot_size);
@@ -1173,6 +1193,10 @@
         sessionState.green_teams = 0;
         sessionState.minutes = 0;
         sessionState.seconds = 0;
+        // Clear session storage and URL to go back to "no session" mode
+        sessionStorage.removeItem("session");
+        updateAddressBar("");
+        updateSessionIndicator();
         toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg> Start`;
         toggleBtn.classList.remove("primary-active");
         toggleBtn.classList.add("primary-idle");
@@ -1180,10 +1204,8 @@
         timerDisplay.classList.remove("flashing-red");
         // Restore proper font color after reset
         applyAppearance();
-        // Hide buttons for clean slate
-        optionsBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-        updateButtonsLayout();
+        // Update button visibility based on new logic
+        updateButtonVisibility();
         resetState = "cleared";
       }
 
@@ -1194,18 +1216,7 @@
       updatePingingState(); // Ensure pinging state is updated after all changes
     });
 
-    configBtn.addEventListener("click", () => {
-      const width = 600;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) * 0.25;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      const currentSession = getCurrentSession();
-      let url = "/edit-config";
-      if (currentSession !== "default") {
-        url += "?session=" + encodeURIComponent(currentSession);
-      }
-      window.open(url, "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
-    });
+    // Config button removed - edit-config functionality moved to Settings window
 
     // ─── Settings & QR functions ───
     function openSettings() {
@@ -1494,7 +1505,8 @@
         qrImg.src = session ? `/qr-image?session=${encodeURIComponent(session)}` : "/qr-image";
       }
 
-      updateButtonsLayout();
+      // Update button visibility based on session validity
+      updateButtonVisibility();
       
       // Start JSON synchronization monitoring
       // startJsonSync(); // REMOVED
