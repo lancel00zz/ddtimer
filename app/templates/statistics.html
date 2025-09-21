@@ -453,7 +453,18 @@
       </div>
       <div id="session-stats-content" class="stats-content" style="display: none;">
         <div class="stats-summary" id="stats-summary">
-          <!-- Summary stats will be populated here -->
+          <!-- Main summary stats will be populated here -->
+        </div>
+        
+        <!-- Advanced Statistics Section -->
+        <div class="section-header" onclick="toggleSection('advanced-stats')" style="margin-top: 20px; cursor: pointer;">
+          <div class="section-toggle collapsed" id="advanced-stats-toggle"></div>
+          <div class="section-title">Advanced Statistics</div>
+        </div>
+        <div class="section-content collapsed" id="advanced-stats-content">
+          <div class="stats-summary" id="advanced-stats-summary">
+            <!-- Advanced stats will be populated here -->
+          </div>
         </div>
       </div>
       <div id="session-stats-error" class="no-data" style="display: none;">
@@ -669,15 +680,21 @@
       const firstScanFormatted = formatTime(data.time_to_first_scan * 60);
       const lastScanFormatted = formatTime(data.time_to_last_scan * 60);
 
-      // Display summary statistics
+      // Format new enhanced fields
+      const medianTimeFormatted = data.median_completion_time ? formatTime(data.median_completion_time * 60) : 'N/A';
+      const earlyRate = data.early_completion_rate ? `${data.early_completion_rate}%` : 'N/A';
+      const lateRate = data.late_completion_rate ? `${data.late_completion_rate}%` : 'N/A';
+      const participationRate = data.participation_rate ? `${data.participation_rate}%` : 'N/A';
+
+      // Main Statistics (Immediate trainer needs)
       const summaryHtml = `
         <div class="stat-item">
           <div class="stat-value">${sessionDurationFormatted}</div>
-          <div class="stat-label">Session Time</div>
+          <div class="stat-label">Countdown Time</div>
         </div>
         <div class="stat-item">
           <div class="stat-value">${data.starting_red_dots}</div>
-          <div class="stat-label">Starting Dots</div>
+          <div class="stat-label">Starting Teams</div>
         </div>
         <div class="stat-item">
           <div class="stat-value">${data.finishing_green_dots}</div>
@@ -692,6 +709,47 @@
           <div class="stat-label">Avg Time</div>
         </div>
         <div class="stat-item">
+          <div class="stat-value">${medianTimeFormatted}</div>
+          <div class="stat-label">Median Time</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${earlyRate}</div>
+          <div class="stat-label">Early Finishers</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${lateRate}</div>
+          <div class="stat-label">Late Finishers</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${participationRate}</div>
+          <div class="stat-label">Participation</div>
+        </div>
+      `;
+      document.getElementById('stats-summary').innerHTML = summaryHtml;
+
+      // Advanced Statistics (Collapsible section)
+      const advancedHtml = `
+        <div class="stat-item">
+          <div class="stat-value">${data.session_date || 'N/A'}</div>
+          <div class="stat-label">Session Date</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${data.session_time || 'N/A'}</div>
+          <div class="stat-label">Session Time</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">#${data.session_sequence_id || 'N/A'}</div>
+          <div class="stat-label">Session ID</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${data.lab_name || 'N/A'}</div>
+          <div class="stat-label">Lab Name</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${data.session_status || 'N/A'}</div>
+          <div class="stat-label">Status</div>
+        </div>
+        <div class="stat-item">
           <div class="stat-value">${firstScanFormatted}</div>
           <div class="stat-label">First Scan</div>
         </div>
@@ -700,7 +758,7 @@
           <div class="stat-label">Last Scan</div>
         </div>
       `;
-      document.getElementById('stats-summary').innerHTML = summaryHtml;
+      document.getElementById('advanced-stats-summary').innerHTML = advancedHtml;
 
       // Display scan events table
       console.log(`📊 Displaying scan events. Count: ${data.scan_events ? data.scan_events.length : 0}`);
