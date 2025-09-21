@@ -141,19 +141,10 @@ def done():
     session_id = request.args.get("session", "default")
     current_time = datetime.now()
     
-    # Check if we've reached the team limit before incrementing
-    session_stats = SessionStats.query.filter_by(session_id=session_id).first()
-    max_teams = session_stats.starting_red_dots if session_stats else 999
-    
-    # Only increment if we haven't reached the team limit
-    if sessions[session_id]["count"] < max_teams:
-        sessions[session_id]["count"] += 1
-        sessions[session_id]["last_ping"] = current_time
-        print(f"✅ Scan recorded: {sessions[session_id]['count']}/{max_teams} for session {session_id}")
-    else:
-        print(f"⚠️  Scan ignored: Already at maximum teams ({max_teams}) for session {session_id}")
-        # Still update last_ping but don't increment counter
-        sessions[session_id]["last_ping"] = current_time
+    # Simple increment - let UI logic handle the visual constraints
+    sessions[session_id]["count"] += 1
+    sessions[session_id]["last_ping"] = current_time
+    print(f"📱 Scan click recorded: {sessions[session_id]['count']} for session {session_id}")
     
     # Record scan event in database if we have a start time
     if sessions[session_id]["start_time"]:
@@ -165,11 +156,7 @@ def done():
             )
             db.session.add(scan_event)
             
-            # Update finishing_green_dots count (now properly capped at source)
-            session_stats = SessionStats.query.filter_by(session_id=session_id).first()
-            if session_stats:
-                session_stats.finishing_green_dots = sessions[session_id]["count"]
-                session_stats.updated_at = current_time
+            # Note: finishing_green_dots will be updated by UI via /report-green-dots endpoint
             
             db.session.commit()
             print(f"📊 Recorded scan event for session {session_id} at {scan_time_relative}s")
@@ -201,6 +188,28 @@ def done():
 def ping():
     session_id = request.args.get("session", "default")
     return str(sessions[session_id]["count"])
+
+@main.route("/report-green-dots", methods=["POST"])
+def report_green_dots():
+    """Endpoint for UI to report actual green dot count for accurate statistics"""
+    session_id = request.args.get("session", "default")
+    try:
+        data = request.get_json()
+        green_dot_count = data.get("green_dots", 0)
+        current_time = datetime.now()
+        
+        # Update session stats with actual UI green dot count
+        session_stats = SessionStats.query.filter_by(session_id=session_id).first()
+        if session_stats:
+            session_stats.finishing_green_dots = green_dot_count
+            session_stats.updated_at = current_time
+            db.session.commit()
+            print(f"📊 UI reported {green_dot_count} green dots for session {session_id}")
+        
+        return jsonify({"ok": True, "green_dots": green_dot_count})
+    except Exception as e:
+        print(f"❌ Error updating green dot count: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @main.route("/reset", methods=["POST"])
 def reset():

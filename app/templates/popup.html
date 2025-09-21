@@ -1372,6 +1372,28 @@
       });
     }
 
+    // ─── Report green dot count for accurate statistics ───
+    async function reportGreenDotCount() {
+      try {
+        const currentSession = getCurrentSession();
+        const greenDotCount = document.querySelectorAll("#right-dots .dot.green, #right-dots img.dot-img").length;
+        
+        await fetch(`/report-green-dots?session=${encodeURIComponent(currentSession)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            green_dots: greenDotCount
+          })
+        });
+        
+        console.log(`📊 Reported ${greenDotCount} green dots for session ${currentSession}`);
+      } catch (error) {
+        console.warn('Failed to report green dot count:', error);
+      }
+    }
+
     // ─── Dot flight animation ───
     function animateDotFlight(redDot) {
       if (window.matchMedia("(max-width: 600px)").matches) {
@@ -1387,6 +1409,9 @@
           redDot.style.setProperty("height", currentHeight, "important");
           document.getElementById("right-dots").appendChild(redDot);
         }
+        // Report actual green dot count to backend for accurate statistics
+        reportGreenDotCount();
+        
         // Check if this was the last red dot
         const selector = sessionState.dot_style === "datadog_bits" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
         if (document.querySelectorAll(selector).length === 0) {
@@ -1472,6 +1497,9 @@
           rightCol.appendChild(newDot);
         }
         clone.remove();
+        
+        // Report actual green dot count to backend for accurate statistics
+        reportGreenDotCount();
         // Check if this was the last red dot, but delay flag for animation finish
         const selector = sessionState.dot_style === "datadog_bits" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
         if (document.querySelectorAll(selector).length === 0) {
