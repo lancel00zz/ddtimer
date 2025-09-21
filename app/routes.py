@@ -141,9 +141,19 @@ def done():
     session_id = request.args.get("session", "default")
     current_time = datetime.now()
     
-    # Update in-memory counter
-    sessions[session_id]["count"] += 1
-    sessions[session_id]["last_ping"] = current_time
+    # Check if we've reached the team limit before incrementing
+    session_stats = SessionStats.query.filter_by(session_id=session_id).first()
+    max_teams = session_stats.starting_red_dots if session_stats else 999
+    
+    # Only increment if we haven't reached the team limit
+    if sessions[session_id]["count"] < max_teams:
+        sessions[session_id]["count"] += 1
+        sessions[session_id]["last_ping"] = current_time
+        print(f"✅ Scan recorded: {sessions[session_id]['count']}/{max_teams} for session {session_id}")
+    else:
+        print(f"⚠️  Scan ignored: Already at maximum teams ({max_teams}) for session {session_id}")
+        # Still update last_ping but don't increment counter
+        sessions[session_id]["last_ping"] = current_time
     
     # Record scan event in database if we have a start time
     if sessions[session_id]["start_time"]:
@@ -155,13 +165,10 @@ def done():
             )
             db.session.add(scan_event)
             
-            # Update finishing_green_dots count (capped at starting_red_dots)
+            # Update finishing_green_dots count (now properly capped at source)
             session_stats = SessionStats.query.filter_by(session_id=session_id).first()
             if session_stats:
-                # Cap finishing_green_dots at starting_red_dots (can't have more completions than teams)
-                max_completions = session_stats.starting_red_dots
-                actual_completions = min(sessions[session_id]["count"], max_completions)
-                session_stats.finishing_green_dots = actual_completions
+                session_stats.finishing_green_dots = sessions[session_id]["count"]
                 session_stats.updated_at = current_time
             
             db.session.commit()
