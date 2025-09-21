@@ -21,7 +21,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, date, time
 from threading import Lock
 
 from .models import SessionState, SessionStats, ScanEvent
@@ -62,6 +62,16 @@ def set_session_state(session_id, state):
         print(f"❌ ERROR: Failed to save session '{session_id}': {e}")
         db.session.rollback()
         raise
+
+def get_next_session_sequence_id():
+    """Get the next auto-incrementing session sequence ID"""
+    try:
+        # Get the highest existing sequence ID
+        max_sequence = db.session.query(db.func.max(SessionStats.session_sequence_id)).scalar()
+        return (max_sequence or 0) + 1
+    except Exception as e:
+        print(f"❌ Error getting next sequence ID: {e}")
+        return 1  # Start from 1 if there's an error
 
 # --- Routes ---
 
@@ -202,18 +212,36 @@ def reset():
         # Create or update session stats
         session_stats = SessionStats.query.filter_by(session_id=session_id).first()
         if session_stats:
-            # Update existing record
+            # Update existing record - reset for new session run
             session_stats.countdown_duration = countdown_duration
             session_stats.starting_red_dots = starting_red_dots
             session_stats.finishing_green_dots = 0
             session_stats.updated_at = current_time
+            # Update session metadata for new run
+            session_stats.session_date = current_time.date()
+            session_stats.session_time_utc = current_time.time()
+            session_stats.session_status = 'active'
+            # Reset calculated fields (will be recalculated as scans come in)
+            session_stats.median_completion_time = None
+            session_stats.completion_quartiles = None
+            session_stats.early_completion_rate = None
+            session_stats.late_completion_rate = None
+            session_stats.participation_rate = None
+            session_stats.completion_spread = None
+            session_stats.peak_completion_period = None
         else:
-            # Create new record
+            # Create new record with enhanced metadata
             session_stats = SessionStats(
                 session_id=session_id,
                 countdown_duration=countdown_duration,
                 starting_red_dots=starting_red_dots,
-                finishing_green_dots=0
+                finishing_green_dots=0,
+                # Enhanced session metadata
+                session_sequence_id=get_next_session_sequence_id(),
+                session_date=current_time.date(),
+                session_time_utc=current_time.time(),
+                lab_name=session_id,  # Option A: lab_name = session_id
+                session_status='active'
             )
             db.session.add(session_stats)
         
@@ -221,7 +249,8 @@ def reset():
         ScanEvent.query.filter_by(session_id=session_id).delete()
         
         db.session.commit()
-        print(f"📊 Initialized session stats for {session_id}: {countdown_duration}s, {starting_red_dots} dots")
+        sequence_id = session_stats.session_sequence_id or "existing"
+        print(f"📊 Initialized session stats for {session_id} (seq#{sequence_id}): {countdown_duration}s, {starting_red_dots} dots")
     except Exception as e:
         print(f"❌ Error initializing session stats: {e}")
         db.session.rollback()
