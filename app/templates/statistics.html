@@ -161,18 +161,20 @@
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
+      background: #ffd700;
+      color: #333;
       padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      line-height: 1.4;
-      white-space: pre-line;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.3;
+      white-space: nowrap;
       z-index: 1000;
-      margin-bottom: 5px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      max-width: 300px;
-      text-align: left;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      border: 1px solid #e6c200;
+      min-width: 120px;
+      text-align: center;
     }
     
     .stat-item[data-tooltip]:hover::before {
@@ -181,9 +183,10 @@
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
-      border: 5px solid transparent;
-      border-top-color: rgba(0, 0, 0, 0.9);
+      border: 6px solid transparent;
+      border-top-color: #ffd700;
       z-index: 1000;
+      margin-bottom: 2px;
     }
 
     .stat-value {
@@ -805,39 +808,39 @@
 
       // Main Statistics (Immediate trainer needs)
       const summaryHtml = `
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Total allocated time for the exercise">
           <div class="stat-value">${sessionDurationFormatted}</div>
           <div class="stat-label">Countdown Time</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Number of teams configured at session start">
           <div class="stat-value">${data.starting_red_dots}</div>
           <div class="stat-label">Starting Teams</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Teams that successfully scanned QR code">
           <div class="stat-value">${data.finishing_green_dots}</div>
           <div class="stat-label">Completed</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Percentage of teams that finished">
           <div class="stat-value">${data.completion_rate}%</div>
           <div class="stat-label">Completion Rate</div>
         </div>
-        <div class="stat-item" data-tooltip="Average time for all completions.&#10;Affected by outliers (very fast/slow teams).">
+        <div class="stat-item" data-tooltip="Mean completion time (affected by outliers)">
           <div class="stat-value">${avgTimeFormatted}</div>
           <div class="stat-label">Avg Time</div>
         </div>
-        <div class="stat-item" data-tooltip="Middle value when completion times are sorted.&#10;More robust than average - not affected by outliers.">
+        <div class="stat-item" data-tooltip="Middle completion time (outlier-resistant)">
           <div class="stat-value">${medianTimeFormatted}</div>
           <div class="stat-label">Median Time</div>
         </div>
-        <div class="stat-item" data-tooltip="Teams finishing in first 50% of countdown time.&#10;Shows how many teams completed quickly.">
+        <div class="stat-item" data-tooltip="Teams completing in first 50% of time">
           <div class="stat-value">${earlyRate}</div>
           <div class="stat-label">Early Finishers</div>
         </div>
-        <div class="stat-item" data-tooltip="Teams finishing in last 25% of countdown time.&#10;Shows how many teams struggled or took their time.">
+        <div class="stat-item" data-tooltip="Teams completing in final 25% of time">
           <div class="stat-value">${lateRate}</div>
           <div class="stat-label">Late Finishers</div>
         </div>
-        <div class="stat-item" data-tooltip="Percentage of teams that scanned at least once.&#10;Shows overall engagement level.">
+        <div class="stat-item" data-tooltip="Teams that scanned at least once">
           <div class="stat-value">${participationRate}</div>
           <div class="stat-label">Participation</div>
         </div>
@@ -846,31 +849,31 @@
 
       // Advanced Statistics (Collapsible section)
       const advancedHtml = `
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Date when session was executed">
           <div class="stat-value">${data.session_date || 'N/A'}</div>
           <div class="stat-label">Session Date</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="UTC time when session started">
           <div class="stat-value">${data.session_time || 'N/A'}</div>
           <div class="stat-label">Session Time</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Unique sequential identifier">
           <div class="stat-value">#${data.session_sequence_id || 'N/A'}</div>
           <div class="stat-label">Session ID</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Session identifier from URL parameter">
           <div class="stat-value">${data.lab_name || 'N/A'}</div>
           <div class="stat-label">Lab Name</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Current session state (active/completed)">
           <div class="stat-value">${data.session_status || 'N/A'}</div>
           <div class="stat-label">Status</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Time elapsed to first team completion">
           <div class="stat-value">${firstScanFormatted}</div>
           <div class="stat-label">First Scan</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Time elapsed to final team completion">
           <div class="stat-value">${lastScanFormatted}</div>
           <div class="stat-label">Last Scan</div>
         </div>
