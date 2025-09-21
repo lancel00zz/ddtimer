@@ -35,6 +35,7 @@
       backdrop-filter: blur(10px);
       width: 100%; /* Use full available width */
       max-width: none; /* Remove width restriction */
+      overflow: visible;
     }
 
     .section-header {
@@ -76,7 +77,7 @@
     }
 
     .section-content {
-      overflow: hidden;
+      overflow: visible;
       transition: max-height 0.3s ease, opacity 0.3s ease;
     }
 
@@ -142,6 +143,7 @@
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 12px;
       margin-bottom: 16px;
+      overflow: visible;
     }
 
     .stat-item {
@@ -150,6 +152,48 @@
       border-radius: 8px;
       text-align: center;
       border: 1px solid #e2e8f0;
+      position: relative;
+      cursor: help;
+    }
+    
+    
+    /* Tooltip styles - increased specificity and z-index */
+    .stats-summary .stat-item[data-tooltip]:hover::after,
+    .stat-item[data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffd700;
+      color: #333;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.3;
+      white-space: nowrap;
+      z-index: 9999;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      border: 1px solid #e6c200;
+      min-width: 120px;
+      text-align: center;
+      pointer-events: none;
+    }
+    
+    .stats-summary .stat-item[data-tooltip]:hover::before,
+    .stat-item[data-tooltip]:hover::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #ffd700;
+      z-index: 9998;
+      margin-bottom: 2px;
+      pointer-events: none;
     }
 
     .stat-value {
@@ -317,13 +361,15 @@
       margin-left: 50px;
     }
 
-    /* Print styles */
+    /* Enhanced Print styles */
     @media print {
       body {
         background: white !important;
         color: black !important;
-        font-size: 12pt;
-        line-height: 1.4;
+        font-size: 11pt;
+        line-height: 1.3;
+        margin: 0;
+        padding: 20px;
       }
       
       .sticky-buttons {
@@ -331,45 +377,93 @@
       }
       
       .statistics-card {
-        background: white !important;
         box-shadow: none !important;
         border: 1px solid #ccc;
         margin-bottom: 20px;
         page-break-inside: avoid;
       }
       
-      .section-content {
-        max-height: none !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-      }
-      
-      .section-content.collapsed {
-        max-height: none !important;
-        opacity: 1 !important;
+      .section-header {
+        background: #f5f5f5 !important;
+        color: black !important;
+        border-bottom: 2px solid #333;
+        font-weight: bold;
+        padding: 10px !important;
       }
       
       .section-toggle {
         display: none !important;
       }
       
-      .stats-table {
-        border: 1px solid #333;
+      .section-content {
+        display: block !important;
       }
       
-      .stats-table th,
-      .stats-table td {
-        border: 1px solid #333;
-        padding: 8px;
+      .section-content.collapsed {
+        display: block !important;
+      }
+      
+      .stats-summary {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
       }
       
       .stat-item {
-        border: 1px solid #ccc;
-        background: #f9f9f9 !important;
+        border: 1px solid #ddd !important;
+        padding: 8px !important;
+        text-align: center;
       }
       
-      h1 {
+      .stat-value {
+        font-size: 14pt !important;
+        font-weight: bold !important;
         color: black !important;
+      }
+      
+      .stat-label {
+        font-size: 9pt !important;
+        color: #666 !important;
+        text-transform: uppercase;
+      }
+      
+      .session-data-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 10px;
+      }
+      
+      .session-data-table th,
+      .session-data-table td {
+        border: 1px solid #333 !important;
+        padding: 6px !important;
+        text-align: left;
+      }
+      
+      .session-data-table th {
+        background: #f0f0f0 !important;
+        font-weight: bold !important;
+      }
+      
+      /* Print header */
+      .statistics-card:first-child::before {
+        content: "DDTimer Session Statistics Report";
+        display: block;
+        font-size: 18pt;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #333;
+      }
+      
+      /* Page breaks */
+      .statistics-card {
+        page-break-after: avoid;
+      }
+      
+      .section-header {
+        page-break-after: avoid;
       }
     }
 
@@ -453,7 +547,18 @@
       </div>
       <div id="session-stats-content" class="stats-content" style="display: none;">
         <div class="stats-summary" id="stats-summary">
-          <!-- Summary stats will be populated here -->
+          <!-- Main summary stats will be populated here -->
+        </div>
+        
+        <!-- Advanced Statistics Section -->
+        <div class="section-header" onclick="toggleSection('advanced-stats')" style="margin-top: 20px; cursor: pointer;">
+          <div class="section-toggle collapsed" id="advanced-stats-toggle"></div>
+          <div class="section-title">Advanced Statistics</div>
+        </div>
+        <div class="section-content collapsed" id="advanced-stats-content">
+          <div class="stats-summary" id="advanced-stats-summary">
+            <!-- Advanced stats will be populated here -->
+          </div>
         </div>
       </div>
       <div id="session-stats-error" class="no-data" style="display: none;">
@@ -525,6 +630,19 @@
     let currentSessionId = null;
     let statisticsData = null;
 
+    // Get session ID from URL parameters
+    function getSessionFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('session') || 'default';
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      currentSessionId = getSessionFromURL();
+      console.log(`📊 Statistics page loaded for session: ${currentSessionId}`);
+      loadStatisticsData(currentSessionId);
+    });
+
     function toggleSection(sectionId) {
       const toggle = document.getElementById(`${sectionId}-toggle`);
       const content = document.getElementById(`${sectionId}-content`);
@@ -549,22 +667,36 @@
         return;
       }
 
-      // Create CSV content
-      let csvContent = "Dot Number,Scan Time\n";
+      // Create enhanced CSV content with session context
+      let csvContent = "Dot#,Scan Time,Session ID,Date of Session,Length of Session\n";
+      
+      // Get session context data
+      const sessionId = statisticsData.session_id || currentSessionId || 'unknown';
+      const sessionDate = statisticsData.session_date || 'N/A';
+      const countdownDuration = statisticsData.countdown_duration || 0;
+      
+      // Format session length (convert seconds to minutes)
+      const sessionLengthFormatted = countdownDuration > 0 
+        ? `${Math.floor(countdownDuration / 60)}m${countdownDuration % 60 > 0 ? ` ${countdownDuration % 60}s` : ''}`
+        : 'N/A';
+      
+      // Add each scan event with session context
       statisticsData.scan_events.forEach(event => {
-        csvContent += `${event.dot_number},${event.time_formatted}\n`;
+        csvContent += `${event.dot_number},${event.time_formatted},${sessionId},${sessionDate},${sessionLengthFormatted}\n`;
       });
 
-      // Create and download file
+      // Create and download file with enhanced name
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `session_${currentSessionId}_scan_data.csv`;
+      a.download = `session_${sessionId}_${sessionDate}_scan_data.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      console.log(`📊 Exported CSV with ${statisticsData.scan_events.length} scan events for session ${sessionId}`);
     }
 
     // Listen for window position message
@@ -594,7 +726,26 @@
     async function loadStatisticsData(sessionId) {
       try {
         console.log(`📊 Loading statistics for session: ${sessionId}`);
-        const response = await fetch(`/api/session-statistics?session=${encodeURIComponent(sessionId)}`);
+        
+        // RADICAL APPROACH: Get actual green dot count from parent window
+        let actualCompletions = null;
+        if (window.opener && !window.opener.closed) {
+          try {
+            const greenDots = window.opener.document.querySelectorAll("#right-dots .dot.green, #right-dots img.dot-img");
+            actualCompletions = greenDots.length;
+            console.log(`🎯 REAL green dot count from UI: ${actualCompletions}`);
+          } catch (e) {
+            console.warn('Could not access parent window:', e);
+          }
+        }
+        
+        // Build API URL with actual completion count
+        let apiUrl = `/api/session-statistics?session=${encodeURIComponent(sessionId)}`;
+        if (actualCompletions !== null) {
+          apiUrl += `&actual_completions=${actualCompletions}`;
+        }
+        
+        const response = await fetch(apiUrl);
         
         if (response.ok) {
           statisticsData = await response.json();
@@ -656,38 +807,85 @@
       const firstScanFormatted = formatTime(data.time_to_first_scan * 60);
       const lastScanFormatted = formatTime(data.time_to_last_scan * 60);
 
-      // Display summary statistics
+      // Format new enhanced fields
+      const medianTimeFormatted = data.median_completion_time ? formatTime(data.median_completion_time * 60) : 'N/A';
+      const earlyRate = data.early_completion_rate ? `${data.early_completion_rate}%` : 'N/A';
+      const lateRate = data.late_completion_rate ? `${data.late_completion_rate}%` : 'N/A';
+      const participationRate = data.participation_rate ? `${data.participation_rate}%` : 'N/A';
+
+      // Main Statistics (Immediate trainer needs)
       const summaryHtml = `
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Total allocated time for the exercise">
           <div class="stat-value">${sessionDurationFormatted}</div>
-          <div class="stat-label">Session Time</div>
+          <div class="stat-label">Countdown Time</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Number of teams configured at session start">
           <div class="stat-value">${data.starting_red_dots}</div>
-          <div class="stat-label">Starting Dots</div>
+          <div class="stat-label">Starting Teams</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Teams that successfully scanned QR code">
           <div class="stat-value">${data.finishing_green_dots}</div>
           <div class="stat-label">Completed</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Percentage of teams that finished">
           <div class="stat-value">${data.completion_rate}%</div>
           <div class="stat-label">Completion Rate</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Mean completion time (affected by outliers)">
           <div class="stat-value">${avgTimeFormatted}</div>
           <div class="stat-label">Avg Time</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Middle completion time (outlier-resistant)">
+          <div class="stat-value">${medianTimeFormatted}</div>
+          <div class="stat-label">Median Time</div>
+        </div>
+        <div class="stat-item" data-tooltip="Teams completing in first 50% of time">
+          <div class="stat-value">${earlyRate}</div>
+          <div class="stat-label">Early Finishers</div>
+        </div>
+        <div class="stat-item" data-tooltip="Teams completing in final 25% of time">
+          <div class="stat-value">${lateRate}</div>
+          <div class="stat-label">Late Finishers</div>
+        </div>
+        <div class="stat-item" data-tooltip="Teams that scanned at least once">
+          <div class="stat-value">${participationRate}</div>
+          <div class="stat-label">Participation</div>
+        </div>
+      `;
+      document.getElementById('stats-summary').innerHTML = summaryHtml;
+
+      // Advanced Statistics (Collapsible section)
+      const advancedHtml = `
+        <div class="stat-item" data-tooltip="Date when session was executed">
+          <div class="stat-value">${data.session_date || 'N/A'}</div>
+          <div class="stat-label">Session Date</div>
+        </div>
+        <div class="stat-item" data-tooltip="UTC time when session started">
+          <div class="stat-value">${data.session_time || 'N/A'}</div>
+          <div class="stat-label">Session Time</div>
+        </div>
+        <div class="stat-item" data-tooltip="Unique sequential identifier">
+          <div class="stat-value">#${data.session_sequence_id || 'N/A'}</div>
+          <div class="stat-label">Session ID</div>
+        </div>
+        <div class="stat-item" data-tooltip="Session identifier from URL parameter">
+          <div class="stat-value">${data.lab_name || 'N/A'}</div>
+          <div class="stat-label">Lab Name</div>
+        </div>
+        <div class="stat-item" data-tooltip="Current session state (active/completed)">
+          <div class="stat-value">${data.session_status || 'N/A'}</div>
+          <div class="stat-label">Status</div>
+        </div>
+        <div class="stat-item" data-tooltip="Time elapsed to first team completion">
           <div class="stat-value">${firstScanFormatted}</div>
           <div class="stat-label">First Scan</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Time elapsed to final team completion">
           <div class="stat-value">${lastScanFormatted}</div>
           <div class="stat-label">Last Scan</div>
         </div>
       `;
-      document.getElementById('stats-summary').innerHTML = summaryHtml;
+      document.getElementById('advanced-stats-summary').innerHTML = advancedHtml;
 
       // Display scan events table
       console.log(`📊 Displaying scan events. Count: ${data.scan_events ? data.scan_events.length : 0}`);

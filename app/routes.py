@@ -21,7 +21,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, date, time
 from threading import Lock
 
 from .models import SessionState, SessionStats, ScanEvent
@@ -62,6 +62,16 @@ def set_session_state(session_id, state):
         print(f"❌ ERROR: Failed to save session '{session_id}': {e}")
         db.session.rollback()
         raise
+
+def get_next_session_sequence_id():
+    """Get the next auto-incrementing session sequence ID"""
+    try:
+        # Get the highest existing sequence ID
+        max_sequence = db.session.query(db.func.max(SessionStats.session_sequence_id)).scalar()
+        return (max_sequence or 0) + 1
+    except Exception as e:
+        print(f"❌ Error getting next sequence ID: {e}")
+        return 1  # Start from 1 if there's an error
 
 # --- Routes ---
 
@@ -131,9 +141,10 @@ def done():
     session_id = request.args.get("session", "default")
     current_time = datetime.now()
     
-    # Update in-memory counter
+    # Simple increment - let UI logic handle the visual constraints
     sessions[session_id]["count"] += 1
     sessions[session_id]["last_ping"] = current_time
+    print(f"📱 Scan click recorded: {sessions[session_id]['count']} for session {session_id}")
     
     # Record scan event in database if we have a start time
     if sessions[session_id]["start_time"]:
@@ -145,11 +156,7 @@ def done():
             )
             db.session.add(scan_event)
             
-            # Update finishing_green_dots count
-            session_stats = SessionStats.query.filter_by(session_id=session_id).first()
-            if session_stats:
-                session_stats.finishing_green_dots = sessions[session_id]["count"]
-                session_stats.updated_at = current_time
+            # Note: finishing_green_dots will be updated by UI via /report-green-dots endpoint
             
             db.session.commit()
             print(f"📊 Recorded scan event for session {session_id} at {scan_time_relative}s")
@@ -182,6 +189,28 @@ def ping():
     session_id = request.args.get("session", "default")
     return str(sessions[session_id]["count"])
 
+@main.route("/report-green-dots", methods=["POST"])
+def report_green_dots():
+    """Endpoint for UI to report actual green dot count for accurate statistics"""
+    session_id = request.args.get("session", "default")
+    try:
+        data = request.get_json()
+        green_dot_count = data.get("green_dots", 0)
+        current_time = datetime.now()
+        
+        # Update session stats with actual UI green dot count
+        session_stats = SessionStats.query.filter_by(session_id=session_id).first()
+        if session_stats:
+            session_stats.finishing_green_dots = green_dot_count
+            session_stats.updated_at = current_time
+            db.session.commit()
+            print(f"📊 UI reported {green_dot_count} green dots for session {session_id}")
+        
+        return jsonify({"ok": True, "green_dots": green_dot_count})
+    except Exception as e:
+        print(f"❌ Error updating green dot count: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @main.route("/reset", methods=["POST"])
 def reset():
     session_id = request.args.get("session", "default")
@@ -202,18 +231,36 @@ def reset():
         # Create or update session stats
         session_stats = SessionStats.query.filter_by(session_id=session_id).first()
         if session_stats:
-            # Update existing record
+            # Update existing record - reset for new session run
             session_stats.countdown_duration = countdown_duration
             session_stats.starting_red_dots = starting_red_dots
             session_stats.finishing_green_dots = 0
             session_stats.updated_at = current_time
+            # Update session metadata for new run
+            session_stats.session_date = current_time.date()
+            session_stats.session_time_utc = current_time.time()
+            session_stats.session_status = 'active'
+            # Reset calculated fields (will be recalculated as scans come in)
+            session_stats.median_completion_time = None
+            session_stats.completion_quartiles = None
+            session_stats.early_completion_rate = None
+            session_stats.late_completion_rate = None
+            session_stats.participation_rate = None
+            session_stats.completion_spread = None
+            session_stats.peak_completion_period = None
         else:
-            # Create new record
+            # Create new record with enhanced metadata
             session_stats = SessionStats(
                 session_id=session_id,
                 countdown_duration=countdown_duration,
                 starting_red_dots=starting_red_dots,
-                finishing_green_dots=0
+                finishing_green_dots=0,
+                # Enhanced session metadata
+                session_sequence_id=get_next_session_sequence_id(),
+                session_date=current_time.date(),
+                session_time_utc=current_time.time(),
+                lab_name=session_id,  # Option A: lab_name = session_id
+                session_status='active'
             )
             db.session.add(session_stats)
         
@@ -221,7 +268,8 @@ def reset():
         ScanEvent.query.filter_by(session_id=session_id).delete()
         
         db.session.commit()
-        print(f"📊 Initialized session stats for {session_id}: {countdown_duration}s, {starting_red_dots} dots")
+        sequence_id = session_stats.session_sequence_id or "existing"
+        print(f"📊 Initialized session stats for {session_id} (seq#{sequence_id}): {countdown_duration}s, {starting_red_dots} dots")
     except Exception as e:
         print(f"❌ Error initializing session stats: {e}")
         db.session.rollback()
@@ -345,8 +393,16 @@ def api_session_statistics():
                 "time_formatted": f"{minutes}:{seconds:02d}"
             })
         
-        # Calculate metrics
-        completion_rate = (session_stats.finishing_green_dots / session_stats.starting_red_dots * 100) if session_stats.starting_red_dots > 0 else 0
+        # RADICAL APPROACH: Use actual completion count from frontend if provided
+        actual_completions = request.args.get("actual_completions", type=int)
+        if actual_completions is not None:
+            finishing_green_dots = actual_completions
+            print(f"🎯 Using REAL green dot count from UI: {actual_completions} (DB had: {session_stats.finishing_green_dots})")
+        else:
+            finishing_green_dots = session_stats.finishing_green_dots
+        
+        # Calculate metrics using actual completion count
+        completion_rate = (finishing_green_dots / session_stats.starting_red_dots * 100) if session_stats.starting_red_dots > 0 else 0
         
         # Calculate average completion time (average of all scan times)
         avg_completion_time = 0
@@ -358,16 +414,83 @@ def api_session_statistics():
         time_to_first_scan = scan_events[0].scan_time_relative if scan_events else 0
         time_to_last_scan = scan_events[-1].scan_time_relative if scan_events else 0
         
+        # Calculate advanced analytics
+        if scan_events and session_stats.countdown_duration > 0:
+            scan_times = [event.scan_time_relative for event in scan_events]
+            countdown_duration = session_stats.countdown_duration
+            
+            # 1. Median completion time
+            sorted_times = sorted(scan_times)
+            n = len(sorted_times)
+            if n % 2 == 0:
+                median_time = (sorted_times[n//2 - 1] + sorted_times[n//2]) / 2
+            else:
+                median_time = sorted_times[n//2]
+            
+            # 2. Early finishers (first 50% of countdown time)
+            early_threshold = countdown_duration * 0.5
+            early_finishers = sum(1 for time in scan_times if time <= early_threshold)
+            early_completion_rate = (early_finishers / finishing_green_dots * 100) if finishing_green_dots > 0 else 0
+            
+            # 3. Late finishers (last 25% of countdown time)  
+            late_threshold = countdown_duration * 0.75
+            late_finishers = sum(1 for time in scan_times if time >= late_threshold)
+            late_completion_rate = (late_finishers / finishing_green_dots * 100) if finishing_green_dots > 0 else 0
+            
+            # 4. Participation rate (% of teams that scanned at least once)
+            # For now, assume each scan represents a unique team (simplified)
+            participation_rate = (finishing_green_dots / session_stats.starting_red_dots * 100) if session_stats.starting_red_dots > 0 else 0
+            
+            # Update session stats with calculated values (for future caching)
+            try:
+                session_stats.median_completion_time = median_time
+                session_stats.early_completion_rate = early_completion_rate
+                session_stats.late_completion_rate = late_completion_rate
+                session_stats.participation_rate = participation_rate
+                db.session.commit()
+                print(f"📊 Calculated analytics for {session_id}: median={median_time:.1f}s, early={early_completion_rate:.1f}%, late={late_completion_rate:.1f}%, participation={participation_rate:.1f}%")
+            except Exception as e:
+                print(f"⚠️ Could not cache analytics: {e}")
+                db.session.rollback()
+        else:
+            # No scan events or invalid countdown duration
+            median_time = None
+            early_completion_rate = None
+            late_completion_rate = None
+            participation_rate = None
+        
+        # Format enhanced metadata for display
+        session_date_formatted = session_stats.session_date.isoformat() if session_stats.session_date else None
+        session_time_formatted = session_stats.session_time_utc.strftime("%H:%M UTC") if session_stats.session_time_utc else None
+        
         return jsonify({
+            # Original fields
             "session_id": session_id,
             "countdown_duration": session_stats.countdown_duration,
             "starting_red_dots": session_stats.starting_red_dots,
-            "finishing_green_dots": session_stats.finishing_green_dots,
+            "finishing_green_dots": finishing_green_dots,
             "completion_rate": round(completion_rate, 1),
             "avg_completion_time": round(avg_completion_time / 60, 2),  # in minutes
             "time_to_first_scan": round(time_to_first_scan / 60, 2),  # in minutes
             "time_to_last_scan": round(time_to_last_scan / 60, 2),  # in minutes
-            "scan_events": scan_data
+            "scan_events": scan_data,
+            
+            # Enhanced session metadata
+            "session_sequence_id": session_stats.session_sequence_id,
+            "session_date": session_date_formatted,
+            "session_time": session_time_formatted,
+            "lab_name": session_stats.lab_name,
+            "session_status": session_stats.session_status,
+            "session_duration_actual": round(session_stats.session_duration_actual / 60, 2) if session_stats.session_duration_actual else None,
+            
+            # Completion analytics (calculated in real-time)
+            "median_completion_time": round(median_time / 60, 2) if median_time else None,
+            "completion_quartiles": session_stats.completion_quartiles,  # TODO: Implement quartiles calculation
+            "early_completion_rate": round(early_completion_rate, 1) if early_completion_rate is not None else 0,
+            "late_completion_rate": round(late_completion_rate, 1) if late_completion_rate is not None else 0,
+            "participation_rate": round(participation_rate, 1) if participation_rate is not None else 0,
+            "completion_spread": round(session_stats.completion_spread / 60, 2) if session_stats.completion_spread else None,
+            "peak_completion_period": session_stats.peak_completion_period
         })
     except Exception as e:
         print(f"❌ Error fetching session statistics: {e}")
