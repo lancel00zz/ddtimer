@@ -1338,8 +1338,8 @@
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
 
-        const statisticsWindow = window.open("/statistics-v2", "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
       const currentSession = getCurrentSession();
+        const statisticsWindow = window.open(`/statistics-v2?session=${encodeURIComponent(currentSession)}`, "_blank", `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);
 
       statisticsWindow.addEventListener("load", () => {
         statisticsWindow.postMessage({

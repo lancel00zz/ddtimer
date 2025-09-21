@@ -525,6 +525,19 @@
     let currentSessionId = null;
     let statisticsData = null;
 
+    // Get session ID from URL parameters
+    function getSessionFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('session') || 'default';
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      currentSessionId = getSessionFromURL();
+      console.log(`📊 Statistics page loaded for session: ${currentSessionId}`);
+      loadStatisticsData(currentSessionId);
+    });
+
     function toggleSection(sectionId) {
       const toggle = document.getElementById(`${sectionId}-toggle`);
       const content = document.getElementById(`${sectionId}-content`);
