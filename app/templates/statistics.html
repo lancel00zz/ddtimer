@@ -150,6 +150,40 @@
       border-radius: 8px;
       text-align: center;
       border: 1px solid #e2e8f0;
+      position: relative;
+      cursor: help;
+    }
+    
+    /* Tooltip styles */
+    .stat-item[data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: pre-line;
+      z-index: 1000;
+      margin-bottom: 5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      max-width: 300px;
+      text-align: left;
+    }
+    
+    .stat-item[data-tooltip]:hover::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
     }
 
     .stat-value {
@@ -787,23 +821,23 @@
           <div class="stat-value">${data.completion_rate}%</div>
           <div class="stat-label">Completion Rate</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Average time for all completions.&#10;Affected by outliers (very fast/slow teams).">
           <div class="stat-value">${avgTimeFormatted}</div>
           <div class="stat-label">Avg Time</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Middle value when completion times are sorted.&#10;More robust than average - not affected by outliers.">
           <div class="stat-value">${medianTimeFormatted}</div>
           <div class="stat-label">Median Time</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Teams finishing in first 50% of countdown time.&#10;Shows how many teams completed quickly.">
           <div class="stat-value">${earlyRate}</div>
           <div class="stat-label">Early Finishers</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Teams finishing in last 25% of countdown time.&#10;Shows how many teams struggled or took their time.">
           <div class="stat-value">${lateRate}</div>
           <div class="stat-label">Late Finishers</div>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" data-tooltip="Percentage of teams that scanned at least once.&#10;Shows overall engagement level.">
           <div class="stat-value">${participationRate}</div>
           <div class="stat-label">Participation</div>
         </div>

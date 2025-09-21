@@ -486,9 +486,9 @@ def api_session_statistics():
             # Completion analytics (calculated in real-time)
             "median_completion_time": round(median_time / 60, 2) if median_time else None,
             "completion_quartiles": session_stats.completion_quartiles,  # TODO: Implement quartiles calculation
-            "early_completion_rate": round(early_completion_rate, 1) if early_completion_rate is not None else None,
-            "late_completion_rate": round(late_completion_rate, 1) if late_completion_rate is not None else None,
-            "participation_rate": round(participation_rate, 1) if participation_rate is not None else None,
+            "early_completion_rate": round(early_completion_rate, 1) if early_completion_rate is not None else 0,
+            "late_completion_rate": round(late_completion_rate, 1) if late_completion_rate is not None else 0,
+            "participation_rate": round(participation_rate, 1) if participation_rate is not None else 0,
             "completion_spread": round(session_stats.completion_spread / 60, 2) if session_stats.completion_spread else None,
             "peak_completion_period": session_stats.peak_completion_period
         })
