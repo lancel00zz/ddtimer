@@ -1409,8 +1409,6 @@
           redDot.style.setProperty("height", currentHeight, "important");
           document.getElementById("right-dots").appendChild(redDot);
         }
-        // Report actual green dot count to backend for accurate statistics
-        reportGreenDotCount();
         
         // Check if this was the last red dot
         const selector = sessionState.dot_style === "datadog_bits" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
@@ -1498,8 +1496,6 @@
         }
         clone.remove();
         
-        // Report actual green dot count to backend for accurate statistics
-        reportGreenDotCount();
         // Check if this was the last red dot, but delay flag for animation finish
         const selector = sessionState.dot_style === "datadog_bits" ? "#left-dots img.dot-img" : "#left-dots .dot.red";
         if (document.querySelectorAll(selector).length === 0) {
@@ -1538,6 +1534,11 @@
           if (redDot) {
             animateDotFlight(redDot);
             lastSeenCount = count;
+            
+            // Report green dot count after UI decides to animate (aligns with polling logic)
+            setTimeout(() => {
+              reportGreenDotCount();
+            }, 2000); // After animation completes
           }
         }
         // Remove finish state logic from here
