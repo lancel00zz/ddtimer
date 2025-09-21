@@ -154,7 +154,13 @@
       cursor: help;
     }
     
-    /* Tooltip styles */
+    /* Debug: highlight items with tooltips */
+    .stat-item[data-tooltip] {
+      border-color: #4299e1;
+    }
+    
+    /* Tooltip styles - increased specificity */
+    .stats-summary .stat-item[data-tooltip]:hover::after,
     .stat-item[data-tooltip]:hover::after {
       content: attr(data-tooltip);
       position: absolute;
@@ -177,6 +183,7 @@
       text-align: center;
     }
     
+    .stats-summary .stat-item[data-tooltip]:hover::before,
     .stat-item[data-tooltip]:hover::before {
       content: '';
       position: absolute;
