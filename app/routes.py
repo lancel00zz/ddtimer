@@ -189,6 +189,42 @@ def ping():
     session_id = request.args.get("session", "default")
     return str(sessions[session_id]["count"])
 
+@main.route("/api/session-completion-state")
+def session_completion_state():
+    """Get actual completion state from database for visual synchronization"""
+    session_id = request.args.get("session", "default")
+    
+    try:
+        # Get completion data from database
+        session_stats = SessionStats.query.filter_by(session_id=session_id).first()
+        
+        if session_stats:
+            return jsonify({
+                "session_id": session_id,
+                "starting_teams": session_stats.starting_red_dots,
+                "completed_teams": session_stats.finishing_green_dots,
+                "in_memory_count": sessions[session_id]["count"],
+                "has_database_state": True
+            })
+        else:
+            return jsonify({
+                "session_id": session_id,
+                "starting_teams": 0,
+                "completed_teams": 0,
+                "in_memory_count": sessions[session_id]["count"],
+                "has_database_state": False
+            })
+    except Exception as e:
+        print(f"❌ Error getting completion state for {session_id}: {e}")
+        return jsonify({
+            "session_id": session_id,
+            "starting_teams": 0,
+            "completed_teams": 0,
+            "in_memory_count": sessions[session_id]["count"],
+            "has_database_state": False,
+            "error": str(e)
+        }), 500
+
 @main.route("/report-green-dots", methods=["POST"])
 def report_green_dots():
     """Endpoint for UI to report actual green dot count for accurate statistics"""

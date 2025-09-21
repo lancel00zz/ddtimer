@@ -1063,12 +1063,49 @@
           }
         }
         
-        // After loading session state, also fetch current scan count
-        const pingResp = await fetch(`/ping?session=${encodeURIComponent(session)}`);
-        if (pingResp.ok) {
-          const count = parseInt(await pingResp.text(), 10);
-          lastSeenCount = count;
+        // After loading session state, sync visual dots with database completion state
+        const completionResp = await fetch(`/api/session-completion-state?session=${encodeURIComponent(session)}`);
+        if (completionResp.ok) {
+          const completionData = await completionResp.json();
+          console.log(`🔄 Database completion state for ${session}:`, completionData);
+          
+          if (completionData.has_database_state && completionData.completed_teams > 0) {
+            // Session has completion data in database - sync visual state
+            const redTeamsFromConfig = sessionState.red_teams || sessionState.teams || 0;
+            const completedFromDB = completionData.completed_teams;
+            const startingFromDB = completionData.starting_teams;
+            
+            console.log(`🎯 Syncing visual state: ${redTeamsFromConfig} red teams, ${completedFromDB} completed from DB`);
+            
+            // Calculate how many dots should be red vs green
+            const remainingRed = Math.max(0, redTeamsFromConfig - completedFromDB);
+            const actualGreen = Math.min(completedFromDB, redTeamsFromConfig);
+            
+            // Update visual dots to match database state
+            createDots(remainingRed, "red", sessionState.dot_size);
+            createDots(actualGreen, "green", sessionState.dot_size);
+            
+            // Update in-memory count to match visual state
+            lastSeenCount = completedFromDB;
+            
+            console.log(`✅ Visual state synced: ${remainingRed} red, ${actualGreen} green dots`);
+          } else {
+            // No database state or no completions - use regular ping for in-memory count
+            const pingResp = await fetch(`/ping?session=${encodeURIComponent(session)}`);
+            if (pingResp.ok) {
+              const count = parseInt(await pingResp.text(), 10);
+              lastSeenCount = count;
+            }
+          }
           initialScanCountLoaded = true;
+        } else {
+          // Fallback to regular ping if completion endpoint fails
+          const pingResp = await fetch(`/ping?session=${encodeURIComponent(session)}`);
+          if (pingResp.ok) {
+            const count = parseInt(await pingResp.text(), 10);
+            lastSeenCount = count;
+            initialScanCountLoaded = true;
+          }
         }
       } catch (err) {
         console.warn("Could not load session state or scan count:", err);
