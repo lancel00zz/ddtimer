@@ -154,12 +154,8 @@
       cursor: help;
     }
     
-    /* Debug: highlight items with tooltips */
-    .stat-item[data-tooltip] {
-      border-color: #4299e1;
-    }
     
-    /* Tooltip styles - increased specificity */
+    /* Tooltip styles - increased specificity and z-index */
     .stats-summary .stat-item[data-tooltip]:hover::after,
     .stat-item[data-tooltip]:hover::after {
       content: attr(data-tooltip);
@@ -175,12 +171,13 @@
       font-weight: 500;
       line-height: 1.3;
       white-space: nowrap;
-      z-index: 1000;
+      z-index: 9999;
       margin-bottom: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       border: 1px solid #e6c200;
       min-width: 120px;
       text-align: center;
+      pointer-events: none;
     }
     
     .stats-summary .stat-item[data-tooltip]:hover::before,
@@ -192,8 +189,9 @@
       transform: translateX(-50%);
       border: 6px solid transparent;
       border-top-color: #ffd700;
-      z-index: 1000;
+      z-index: 9998;
       margin-bottom: 2px;
+      pointer-events: none;
     }
 
     .stat-value {
