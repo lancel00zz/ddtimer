@@ -414,6 +414,51 @@ def api_session_statistics():
         time_to_first_scan = scan_events[0].scan_time_relative if scan_events else 0
         time_to_last_scan = scan_events[-1].scan_time_relative if scan_events else 0
         
+        # Calculate advanced analytics
+        if scan_events and session_stats.countdown_duration > 0:
+            scan_times = [event.scan_time_relative for event in scan_events]
+            countdown_duration = session_stats.countdown_duration
+            
+            # 1. Median completion time
+            sorted_times = sorted(scan_times)
+            n = len(sorted_times)
+            if n % 2 == 0:
+                median_time = (sorted_times[n//2 - 1] + sorted_times[n//2]) / 2
+            else:
+                median_time = sorted_times[n//2]
+            
+            # 2. Early finishers (first 50% of countdown time)
+            early_threshold = countdown_duration * 0.5
+            early_finishers = sum(1 for time in scan_times if time <= early_threshold)
+            early_completion_rate = (early_finishers / finishing_green_dots * 100) if finishing_green_dots > 0 else 0
+            
+            # 3. Late finishers (last 25% of countdown time)  
+            late_threshold = countdown_duration * 0.75
+            late_finishers = sum(1 for time in scan_times if time >= late_threshold)
+            late_completion_rate = (late_finishers / finishing_green_dots * 100) if finishing_green_dots > 0 else 0
+            
+            # 4. Participation rate (% of teams that scanned at least once)
+            # For now, assume each scan represents a unique team (simplified)
+            participation_rate = (finishing_green_dots / session_stats.starting_red_dots * 100) if session_stats.starting_red_dots > 0 else 0
+            
+            # Update session stats with calculated values (for future caching)
+            try:
+                session_stats.median_completion_time = median_time
+                session_stats.early_completion_rate = early_completion_rate
+                session_stats.late_completion_rate = late_completion_rate
+                session_stats.participation_rate = participation_rate
+                db.session.commit()
+                print(f"📊 Calculated analytics for {session_id}: median={median_time:.1f}s, early={early_completion_rate:.1f}%, late={late_completion_rate:.1f}%, participation={participation_rate:.1f}%")
+            except Exception as e:
+                print(f"⚠️ Could not cache analytics: {e}")
+                db.session.rollback()
+        else:
+            # No scan events or invalid countdown duration
+            median_time = None
+            early_completion_rate = None
+            late_completion_rate = None
+            participation_rate = None
+        
         # Format enhanced metadata for display
         session_date_formatted = session_stats.session_date.isoformat() if session_stats.session_date else None
         session_time_formatted = session_stats.session_time_utc.strftime("%H:%M UTC") if session_stats.session_time_utc else None
@@ -438,12 +483,12 @@ def api_session_statistics():
             "session_status": session_stats.session_status,
             "session_duration_actual": round(session_stats.session_duration_actual / 60, 2) if session_stats.session_duration_actual else None,
             
-            # Completion analytics (will be calculated in future steps)
-            "median_completion_time": round(session_stats.median_completion_time / 60, 2) if session_stats.median_completion_time else None,
-            "completion_quartiles": session_stats.completion_quartiles,
-            "early_completion_rate": round(session_stats.early_completion_rate, 1) if session_stats.early_completion_rate else None,
-            "late_completion_rate": round(session_stats.late_completion_rate, 1) if session_stats.late_completion_rate else None,
-            "participation_rate": round(session_stats.participation_rate, 1) if session_stats.participation_rate else None,
+            # Completion analytics (calculated in real-time)
+            "median_completion_time": round(median_time / 60, 2) if median_time else None,
+            "completion_quartiles": session_stats.completion_quartiles,  # TODO: Implement quartiles calculation
+            "early_completion_rate": round(early_completion_rate, 1) if early_completion_rate is not None else None,
+            "late_completion_rate": round(late_completion_rate, 1) if late_completion_rate is not None else None,
+            "participation_rate": round(participation_rate, 1) if participation_rate is not None else None,
             "completion_spread": round(session_stats.completion_spread / 60, 2) if session_stats.completion_spread else None,
             "peak_completion_period": session_stats.peak_completion_period
         })
