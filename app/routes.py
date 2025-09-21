@@ -387,7 +387,12 @@ def api_session_statistics():
         time_to_first_scan = scan_events[0].scan_time_relative if scan_events else 0
         time_to_last_scan = scan_events[-1].scan_time_relative if scan_events else 0
         
+        # Format enhanced metadata for display
+        session_date_formatted = session_stats.session_date.isoformat() if session_stats.session_date else None
+        session_time_formatted = session_stats.session_time_utc.strftime("%H:%M UTC") if session_stats.session_time_utc else None
+        
         return jsonify({
+            # Original fields
             "session_id": session_id,
             "countdown_duration": session_stats.countdown_duration,
             "starting_red_dots": session_stats.starting_red_dots,
@@ -396,7 +401,24 @@ def api_session_statistics():
             "avg_completion_time": round(avg_completion_time / 60, 2),  # in minutes
             "time_to_first_scan": round(time_to_first_scan / 60, 2),  # in minutes
             "time_to_last_scan": round(time_to_last_scan / 60, 2),  # in minutes
-            "scan_events": scan_data
+            "scan_events": scan_data,
+            
+            # Enhanced session metadata
+            "session_sequence_id": session_stats.session_sequence_id,
+            "session_date": session_date_formatted,
+            "session_time": session_time_formatted,
+            "lab_name": session_stats.lab_name,
+            "session_status": session_stats.session_status,
+            "session_duration_actual": round(session_stats.session_duration_actual / 60, 2) if session_stats.session_duration_actual else None,
+            
+            # Completion analytics (will be calculated in future steps)
+            "median_completion_time": round(session_stats.median_completion_time / 60, 2) if session_stats.median_completion_time else None,
+            "completion_quartiles": session_stats.completion_quartiles,
+            "early_completion_rate": round(session_stats.early_completion_rate, 1) if session_stats.early_completion_rate else None,
+            "late_completion_rate": round(session_stats.late_completion_rate, 1) if session_stats.late_completion_rate else None,
+            "participation_rate": round(session_stats.participation_rate, 1) if session_stats.participation_rate else None,
+            "completion_spread": round(session_stats.completion_spread / 60, 2) if session_stats.completion_spread else None,
+            "peak_completion_period": session_stats.peak_completion_period
         })
     except Exception as e:
         print(f"❌ Error fetching session statistics: {e}")
