@@ -12,43 +12,44 @@ services:
     platform: linux/amd64
     image: lancel00zz/ddtimer:latest
     pull_policy: always
+    command: ["./startup.sh"]  # ← This overrides the Dockerfile CMD and initializes the database
     ports:
       - "5050:5050"
     restart: unless-stopped
     environment:
       - FLASK_ENV=production
-      - DD_ENV=prod-local
       - DD_SERVICE=ddtimer
-      - DD_VERSION=5.1
+      - DD_ENV=prod
+      - DD_VERSION=6.0
+      - DD_AGENT_HOST=datadog-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_TRACE_ENABLED=true
+      - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
     labels:
       com.datadoghq.ad.logs: '[{"source": "docker"}]'
     networks:
       - ddtimer-network
 
-  datadog-agent:
-    image: gcr.io/datadoghq/agent:latest
-    platform: linux/amd64
-    environment:
-      - DD_API_KEY=${DD_API_KEY}
-      - DD_SITE=datadoghq.com
-      - DD_APM_ENABLED=false
-      - DD_LOGS_ENABLED=true
-      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
-      - DD_PROCESS_AGENT_ENABLED=true
-      - DD_CONTAINER_EXCLUDE=name:datadog-agent
-      - DD_HOSTNAME=ddtimer-agent-prod-local
-      - DD_ENV=prod-local
-      - DD_SERVICE=ddtimer
-      - DD_VERSION=5.1
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /proc/:/host/proc/:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  db:
+    image: postgres:15
     restart: unless-stopped
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: ddtimerdb
+      POSTGRES_USER: ddtimer
+      POSTGRES_PASSWORD: ddtimerpassword
+    volumes:
+      - db_data:/var/lib/postgresql/data
     networks:
       - ddtimer-network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "postgresql", "service": "ddtimer-db"}]'
+
 
 networks:
   ddtimer-network:
     driver: bridge
+
+volumes:
+  db_data:    

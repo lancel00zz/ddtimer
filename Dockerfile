@@ -16,5 +16,6 @@ ENV FLASK_APP=run.py
 # Expose port
 EXPOSE 5050
 
-# Run the app
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5050"]
+# Make startup script executable and run it
+RUN chmod +x startup.sh
+CMD ["./startup.sh"]
