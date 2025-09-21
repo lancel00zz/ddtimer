@@ -21,7 +21,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from collections import defaultdict
-from datetime import datetime, date, time
+from datetime import datetime, date
 from threading import Lock
 
 from .models import SessionState, SessionStats, ScanEvent
@@ -352,7 +352,7 @@ def upload_background():
     if file:
         filename = secure_filename(file.filename)
         name, ext = os.path.splitext(filename)
-        unique_filename = f"{session}_{name}_{int(time.time())}{ext}"
+        unique_filename = f"{session}_{name}_{int(datetime.now().timestamp())}{ext}"
         static_dir = Path("app/static")
         static_dir.mkdir(exist_ok=True)
         file_path = static_dir / unique_filename
