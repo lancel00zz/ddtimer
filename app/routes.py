@@ -155,10 +155,13 @@ def done():
             )
             db.session.add(scan_event)
             
-            # Update finishing_green_dots count
+            # Update finishing_green_dots count (capped at starting_red_dots)
             session_stats = SessionStats.query.filter_by(session_id=session_id).first()
             if session_stats:
-                session_stats.finishing_green_dots = sessions[session_id]["count"]
+                # Cap finishing_green_dots at starting_red_dots (can't have more completions than teams)
+                max_completions = session_stats.starting_red_dots
+                actual_completions = min(sessions[session_id]["count"], max_completions)
+                session_stats.finishing_green_dots = actual_completions
                 session_stats.updated_at = current_time
             
             db.session.commit()
