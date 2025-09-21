@@ -393,8 +393,16 @@ def api_session_statistics():
                 "time_formatted": f"{minutes}:{seconds:02d}"
             })
         
-        # Calculate metrics
-        completion_rate = (session_stats.finishing_green_dots / session_stats.starting_red_dots * 100) if session_stats.starting_red_dots > 0 else 0
+        # RADICAL APPROACH: Use actual completion count from frontend if provided
+        actual_completions = request.args.get("actual_completions", type=int)
+        if actual_completions is not None:
+            finishing_green_dots = actual_completions
+            print(f"🎯 Using REAL green dot count from UI: {actual_completions} (DB had: {session_stats.finishing_green_dots})")
+        else:
+            finishing_green_dots = session_stats.finishing_green_dots
+        
+        # Calculate metrics using actual completion count
+        completion_rate = (finishing_green_dots / session_stats.starting_red_dots * 100) if session_stats.starting_red_dots > 0 else 0
         
         # Calculate average completion time (average of all scan times)
         avg_completion_time = 0
@@ -415,7 +423,7 @@ def api_session_statistics():
             "session_id": session_id,
             "countdown_duration": session_stats.countdown_duration,
             "starting_red_dots": session_stats.starting_red_dots,
-            "finishing_green_dots": session_stats.finishing_green_dots,
+            "finishing_green_dots": finishing_green_dots,
             "completion_rate": round(completion_rate, 1),
             "avg_completion_time": round(avg_completion_time / 60, 2),  # in minutes
             "time_to_first_scan": round(time_to_first_scan / 60, 2),  # in minutes

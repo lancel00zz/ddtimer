@@ -618,7 +618,26 @@
     async function loadStatisticsData(sessionId) {
       try {
         console.log(`📊 Loading statistics for session: ${sessionId}`);
-        const response = await fetch(`/api/session-statistics?session=${encodeURIComponent(sessionId)}`);
+        
+        // RADICAL APPROACH: Get actual green dot count from parent window
+        let actualCompletions = null;
+        if (window.opener && !window.opener.closed) {
+          try {
+            const greenDots = window.opener.document.querySelectorAll("#right-dots .dot.green, #right-dots img.dot-img");
+            actualCompletions = greenDots.length;
+            console.log(`🎯 REAL green dot count from UI: ${actualCompletions}`);
+          } catch (e) {
+            console.warn('Could not access parent window:', e);
+          }
+        }
+        
+        // Build API URL with actual completion count
+        let apiUrl = `/api/session-statistics?session=${encodeURIComponent(sessionId)}`;
+        if (actualCompletions !== null) {
+          apiUrl += `&actual_completions=${actualCompletions}`;
+        }
+        
+        const response = await fetch(apiUrl);
         
         if (response.ok) {
           statisticsData = await response.json();
