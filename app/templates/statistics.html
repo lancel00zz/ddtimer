@@ -573,22 +573,36 @@
         return;
       }
 
-      // Create CSV content
-      let csvContent = "Dot Number,Scan Time\n";
+      // Create enhanced CSV content with session context
+      let csvContent = "Dot#,Scan Time,Session ID,Date of Session,Length of Session\n";
+      
+      // Get session context data
+      const sessionId = statisticsData.session_id || currentSessionId || 'unknown';
+      const sessionDate = statisticsData.session_date || 'N/A';
+      const countdownDuration = statisticsData.countdown_duration || 0;
+      
+      // Format session length (convert seconds to minutes)
+      const sessionLengthFormatted = countdownDuration > 0 
+        ? `${Math.floor(countdownDuration / 60)}m${countdownDuration % 60 > 0 ? ` ${countdownDuration % 60}s` : ''}`
+        : 'N/A';
+      
+      // Add each scan event with session context
       statisticsData.scan_events.forEach(event => {
-        csvContent += `${event.dot_number},${event.time_formatted}\n`;
+        csvContent += `${event.dot_number},${event.time_formatted},${sessionId},${sessionDate},${sessionLengthFormatted}\n`;
       });
 
-      // Create and download file
+      // Create and download file with enhanced name
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `session_${currentSessionId}_scan_data.csv`;
+      a.download = `session_${sessionId}_${sessionDate}_scan_data.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      console.log(`📊 Exported CSV with ${statisticsData.scan_events.length} scan events for session ${sessionId}`);
     }
 
     // Listen for window position message
