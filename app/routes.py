@@ -335,7 +335,9 @@ def api_config():
 @main.route("/qr-image")
 def qr_image():
     session = request.args.get("session", "default")
-    img = qrcode.make(session)
+    # Generate the full URL to the /done endpoint
+    done_url = request.url_root.rstrip("/") + f"/done?session={session}"
+    img = qrcode.make(done_url)
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
