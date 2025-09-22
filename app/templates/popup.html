@@ -898,20 +898,26 @@
       const currentGreenDots = document.querySelectorAll("#right-dots .dot.green, #right-dots img.dot-img").length;
       const wasTimerRunning = intervalId !== null;
       
-      // Convert string values to numbers and update session state
+      // FIXED: Only update functional data if explicitly provided, preserve existing values otherwise
       const processedData = {
-        ...data,
-        minutes: parseInt(data.minutes, 10) || 0,
-        seconds: parseInt(data.seconds, 10) || 0,
-        red_teams: parseInt(data.red_teams || data.teams, 10) || 0,
-        green_teams: parseInt(data.green_teams, 10) || 0,
-        dot_size: data.dot_size || "S",
-        dot_style: data.dot_style || "datadog_bits",
-        contrast_mode: data.contrast_mode || "auto",
-        custom_font_color_set: true
+        // Cosmetic settings (always apply)
+        dot_size: data.dot_size || sessionState.dot_size || "S",
+        dot_style: data.dot_style || sessionState.dot_style || "datadog_bits",
+        contrast_mode: data.contrast_mode || sessionState.contrast_mode || "auto",
+        background_color: data.background_color || sessionState.background_color,
+        font_color: data.font_color || sessionState.font_color,
+        font_family: data.font_family || sessionState.font_family,
+        background_image: data.background_image !== undefined ? data.background_image : sessionState.background_image,
+        custom_font_color_set: true,
+        
+        // Functional data (only update if explicitly provided and different from current)
+        minutes: data.minutes !== undefined ? parseInt(data.minutes, 10) || 0 : sessionState.minutes || 0,
+        seconds: data.seconds !== undefined ? parseInt(data.seconds, 10) || 0 : sessionState.seconds || 0,
+        red_teams: data.red_teams !== undefined ? parseInt(data.red_teams || data.teams, 10) || 0 : sessionState.red_teams || 0,
+        green_teams: data.green_teams !== undefined ? parseInt(data.green_teams, 10) || 0 : sessionState.green_teams || 0
       };
       
-      console.log("🔧 Processed data:", processedData);
+      console.log("🔧 Processed data (preserving existing functional data):", processedData);
       Object.assign(sessionState, processedData);
       
       // Migrate old "datadog" to "datadog_bits" for backward compatibility

@@ -6,7 +6,7 @@ name: ddtimer-developer-branch
 services:
   ddtimer:
     platform: linux/amd64
-    image: lancel00zz/ddtimer:5.1
+    image: lancel00zz/ddtimer:6.0
     pull_policy: always
     command: ["./startup.sh"]  # ← This overrides the Dockerfile CMD and initializes the database
     ports:
@@ -19,7 +19,7 @@ services:
       - FLASK_ENV=development
       - DD_ENV=dev
       - DD_SERVICE=ddtimer
-      - DD_VERSION=5.1
+      - DD_VERSION=6.0
       - DD_AGENT_HOST=datadog-agent
       - DD_TRACE_AGENT_PORT=8126
       - DD_TRACE_ENABLED=true
@@ -28,6 +28,9 @@ services:
       com.datadoghq.ad.logs: '[{"source": "flask", "service": "ddtimer"}]'
     networks:
       - ddtimer-network
+    depends_on:
+      db:
+        condition: service_healthy
 # ----------------------------------------------------------
   # IMPORTANT:
   # If you ever delete the db_data volume (e.g., with `docker compose down -v`),
@@ -53,6 +56,12 @@ services:
       - ddtimer-network
     labels:
       com.datadoghq.ad.logs: '[{"source": "postgresql", "service": "ddtimer-db"}]'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ddtimer -d ddtimerdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
 
 
   datadog-agent:
@@ -72,7 +81,7 @@ services:
       - DD_HOSTNAME=ddtimer-agent-dev-local
       - DD_ENV=dev
       - DD_SERVICE=ddtimer
-      - DD_VERSION=5.1
+      - DD_VERSION=6.0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro

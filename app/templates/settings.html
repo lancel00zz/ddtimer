@@ -540,6 +540,7 @@
   <script>
     let currentBackgroundImage = null;
     let prefill = {};
+    let originalFormData = {}; // Track original values to detect changes
 
     function toggleSection(sectionId) {
       const toggle = document.getElementById(`${sectionId}-toggle`);
@@ -565,6 +566,21 @@
         if (resp.ok) {
           const data = await resp.json();
           if (data) {
+            // Store original values to detect changes later
+            originalFormData = {
+              minutes: data.minutes || 0,
+              seconds: data.seconds || 0,
+              red_teams: data.red_teams || 0,
+              green_teams: data.green_teams || 0,
+              dot_size: data.dot_size || 'S',
+              dot_style: data.dot_style || 'circle',
+              contrast_mode: data.contrast_mode || 'auto',
+              background_color: data.background_color || '',
+              font_color: data.font_color || '',
+              font_family: data.font_family || '',
+              background_image: data.background_image || null
+            };
+            
             document.getElementById('time-input').value = data.minutes || 0;
             document.getElementById('seconds-input').value = data.seconds || 0;
             document.getElementById('red-teams').value = data.red_teams || 0;
@@ -676,23 +692,55 @@
         console.log("🔄 Generated new session ID:", sessionId);
       }
 
-      if (window.opener) {
-        window.opener.postMessage({
-          type: "settings",
-          minutes,
-          seconds,
-          red_teams: red,
-          green_teams: green,
-          session_id: sessionId || "",
-          dot_size: dotSize,
-          dot_style: dotStyle,
-          contrast_mode: contrastMode,
-          background_color: backgroundColor,
-          font_color: fontColor,
-          font_family: fontFamily,
-          background_image: currentBackgroundImage
-        }, "*");
+      // SMART CHANGE DETECTION: Only send fields that actually changed
+      const message = {
+        type: "settings",
+        session_id: sessionId || ""
+      };
+      
+      // Check what actually changed and only send those fields
+      if (originalFormData.minutes !== minutes) {
+        message.minutes = minutes;
       }
+      if (originalFormData.seconds !== seconds) {
+        message.seconds = seconds;
+      }
+      if (originalFormData.red_teams !== red) {
+        message.red_teams = red;
+      }
+      if (originalFormData.green_teams !== green) {
+        message.green_teams = green;
+      }
+      if (originalFormData.dot_size !== dotSize) {
+        message.dot_size = dotSize;
+      }
+      if (originalFormData.dot_style !== dotStyle) {
+        message.dot_style = dotStyle;
+      }
+      if (originalFormData.contrast_mode !== contrastMode) {
+        message.contrast_mode = contrastMode;
+      }
+      if (originalFormData.background_color !== backgroundColor) {
+        message.background_color = backgroundColor;
+      }
+      if (originalFormData.font_color !== fontColor) {
+        message.font_color = fontColor;
+      }
+      if (originalFormData.font_family !== fontFamily) {
+        message.font_family = fontFamily;
+      }
+      if (originalFormData.background_image !== currentBackgroundImage) {
+        message.background_image = currentBackgroundImage;
+      }
+      
+      console.log("📋 Only sending changed fields:", message);
+      
+      console.log("📋 Sending settings message:", message);
+
+      if (window.opener) {
+        window.opener.postMessage(message, "*");
+      }
+      
       // Save session to storage if we have a session ID
       if (sessionId) {
         sessionStorage.setItem("session", sessionId);

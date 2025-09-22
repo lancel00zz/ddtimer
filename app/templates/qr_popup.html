@@ -125,10 +125,12 @@
       console.log('Testing visit to:', testUrl);
       
       try {
+        // Use fetch to simulate scan without opening new tab
         const response = await fetch(testUrl, { method: "GET" });
         if (response.ok) {
-          console.log('Test visit successful');
-          // Show visual feedback
+          console.log('Test visit successful - dot should animate in main window');
+          
+          // Show visual feedback in QR popup
           const urlElement = document.getElementById("url-line");
           const originalBackground = urlElement.style.background;
           const originalColor = urlElement.style.color;
@@ -141,11 +143,9 @@
           }, 2000);
         } else {
           console.error('Test visit failed:', response.status);
-          alert(`Test visit failed: ${response.status}`);
         }
       } catch (error) {
         console.error('Test visit error:', error);
-        alert('Test visit failed: ' + error.message);
       }
     });
 
