@@ -23,6 +23,9 @@ services:
       - DD_RUNTIME_METRICS_ENABLED=true
       - DD_RUNTIME_METRICS_RUNTIME_ID_ENABLED=true
 
+      # Log-Trace Correlation
+      - DD_LOGS_INJECTION=true
+
     labels:
       # Datadog log collection with service and source tags
       com.datadoghq.ad.logs: '[{"source": "flask", "service": "ddtimer", "env": "lab", "version": "step3"}]'
