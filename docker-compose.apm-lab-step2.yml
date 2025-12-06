@@ -1,4 +1,4 @@
-## APM Lab - Step 2: Full APM Instrumentation
+## APM Lab - Step2: Full APM Instrumentation
 ## Infrastructure monitoring + APM traces with automatic instrumentation
 name: apm-lab-step2
 services:
@@ -20,7 +20,8 @@ services:
       - DD_TRACE_AGENT_PORT=8126
     labels:
       # Datadog log collection with service and source tags
-      com.datadoghq.ad.logs: '[{"source": "flask", "service": "ddtimer"}]'
+      com.datadoghq.ad.logs: '[{"source": "flask", "service": "ddtimer", "env": "lab", "version": "step2"}]'
+      com.datadoghq.ad.tags: '["service:ddtimer", "env:lab", "version:step2", "project:apm-lab", "component:frontend"]'
     networks:
       - ddtimer-network
 
@@ -33,16 +34,23 @@ services:
       POSTGRES_DB: ddtimerdb
       POSTGRES_USER: ddtimer
       POSTGRES_PASSWORD: ddtimerpassword
+
+      # APM Environment Variables (for database integrations)
+      DD_SERVICE: ddtimer-db
+      DD_ENV: lab  
+      DD_VERSION: step2
+
     volumes:
       - db_data:/var/lib/postgresql/data
     labels:
       # Datadog log collection for PostgreSQL
-      com.datadoghq.ad.logs: '[{"source": "postgresql", "service": "ddtimer-db"}]'
+      com.datadoghq.ad.logs: '[{"source": "postgresql", "service": "ddtimer-db", "env": "lab", "version": "step2"}]'
+      com.datadoghq.ad.tags: '["service:ddtimer-db", "env:lab", "version:step2", "project:apm-lab", "component:database"]'
     networks:
       - ddtimer-network
 
   datadog-agent:
-    image: gcr.io/datadoghq/agent:7
+    image: gcr.io/datadoghq/agent:7.67.0
     platform: linux/amd64
     environment:
       # API Configuration
@@ -57,10 +65,17 @@ services:
       # APM Configuration (ready for step 2)
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
+
+      # Infrastructure Metrics Collection
+      # Collects CPU, memory, process metrics. Also from Docker and DogStatsD.
+      - DD_PROCESS_AGENT_ENABLED=true
+      - DD_CONTAINER_COLLECT_ALL=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
       
       # Global Environment Tags
       - DD_ENV=lab
-      - DD_TAGS=version:step2 team:training
+      - DD_TAGS=cost-center:sales, team:training
+
     volumes:
       # Essential volume mounts (cross-platform compatible)
       - /var/run/docker.sock:/var/run/docker.sock:ro
