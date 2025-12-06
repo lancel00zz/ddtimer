@@ -1,0 +1,72 @@
+## APM Lab - Step 1: Add Datadog Agent Container
+## Infrastructure monitoring with best practice autodiscovery tags
+name: apm-lab-step1
+services:
+  ddtimer:
+    image: lancel00zz/ddtimer:apm-lab-step1
+    ports:
+      - "5049:5050"
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
+    labels:
+      # Datadog autodiscovery for log collection and container metrics
+      com.datadoghq.ad.logs: '[{"source": "flask", "service": "ddtimer", "env": "lab", "version": "step1"}]'
+      com.datadoghq.ad.tags: '["service:ddtimer", "env:lab", "version:step1", "project:apm-lab", "component:frontend"]'
+    networks:
+      - ddtimer-network
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_DB: ddtimerdb
+      POSTGRES_USER: ddtimer
+      POSTGRES_PASSWORD: ddtimerpassword
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    labels:
+      # Datadog autodiscovery for log collection and container metrics
+      com.datadoghq.ad.logs: '[{"source": "postgresql", "service": "ddtimer-db", "env": "lab", "version": "step1"}]'
+      com.datadoghq.ad.tags: '["service:ddtimer-db", "env:lab", "version:step1", "project:apm-lab", "component:database"]'
+    networks:
+      - ddtimer-network
+
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    platform: linux/amd64
+    environment:
+      # API Configuration
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=datadoghq.com
+      
+      # Log Collection
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      
+      # Global Environment and Tags
+      - DD_ENV=lab
+      - DD_TAGS=team:enablement cost-center:sales
+      
+    labels:
+      # Collect agent logs with Docker source to demonstrate Docker log pipeline
+      com.datadoghq.ad.logs: '[{"source": "docker", "service": "datadog-agent", "env": "lab", "version": "step1"}]'
+      com.datadoghq.ad.tags: '["service:datadog-agent", "env:lab", "version:step1", "component:agent"]'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    restart: unless-stopped
+    networks:
+      - ddtimer-network
+
+networks:
+  ddtimer-network:
+    driver: bridge
+
+volumes:
+  db_data:
