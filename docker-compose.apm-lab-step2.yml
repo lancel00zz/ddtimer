@@ -3,7 +3,7 @@
 name: apm-lab-step2
 services:
   ddtimer:
-    image: lancel00zz/ddtimer:apm-lab-step2
+    image: lancel00zz/ddtimer:apm-lab-step2-v4.9.6
     ports:
       - "5049:5050"
     restart: unless-stopped
