@@ -11,12 +11,12 @@ services:
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
+
+    # Mount local code for live development
     volumes:
-      # Mount local code for live development
       - ./app:/app/app
       - ./config:/app/config
-    labels:
-      com.datadoghq.ad.logs: '[{"source": "docker"}]'
+
     networks:
       - ddtimer-network
 
@@ -40,4 +40,3 @@ networks:
 
 volumes:
   db_data:
-
