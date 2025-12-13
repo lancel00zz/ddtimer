@@ -1,16 +1,22 @@
-## APM Lab 4.9.6 - Step 0: Clean Environment
-
+## APM Lab - Step 0: Clean Environment
 ## No Datadog Agent, No APM instrumentation
-name: apm-lab-step0
+## This is the DEVELOPMENT version - builds locally and mounts code
+name: apm-lab-0-baseline
 services:
   ddtimer:
-    image: lancel00zz/ddtimer:step0
+    build: .
     ports:
       - "5049:5050"
     restart: unless-stopped
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://ddtimer:ddtimerpassword@db:5432/ddtimerdb
+
+    # Mount local code for live development
+    volumes:
+      - ./app:/app/app
+      - ./config:/app/config
+
     networks:
       - ddtimer-network
 
