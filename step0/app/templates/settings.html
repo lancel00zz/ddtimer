@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Timer Settings</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 500px;
+      color: #333;
+    }
+
+    .settings-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section-toggle {
+      width: 0;
+      height: 0;
+      border-left: 6px solid #4a5568;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .section-toggle.collapsed {
+      transform: rotate(0deg); /* Pointing right when collapsed */
+    }
+
+    .section-toggle:not(.collapsed) {
+      transform: rotate(90deg); /* Pointing down when expanded */
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: #2d3748;
+      margin: 0;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-content {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    .section-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .input-group {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .input-group-wide {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-weight: 500;
+      font-size: 13px;
+      color: #4a5568;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      font-size: 13px;
+      width: 50px;
+      text-align: center;
+      padding: 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #f7fafc;
+      transition: all 0.2s;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #f7fafc;
+      transition: all 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="color"] {
+      width: 36px;
+      height: 28px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: none;
+    }
+
+    select {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #f7fafc;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      flex: 1;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .file-input-label:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .filename-display {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 4px;
+      font-style: italic;
+      grid-column: 2;
+    }
+
+    .image-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+      grid-column: 2;
+    }
+
+    .image-thumbnail {
+      width: 50px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid #e2e8f0;
+      background: #f7fafc;
+      display: none;
+    }
+
+    .image-thumbnail.visible {
+      display: block;
+    }
+
+    .image-info {
+      flex: 1;
+      font-size: 11px;
+      color: #718096;
+    }
+
+    .remove-image {
+      background: #fed7d7;
+      color: #c53030;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .remove-image:hover {
+      background: #feb2b2;
+    }
+
+    .session-help {
+      font-size: 11px;
+      color: #718096;
+      margin: 6px 0 0 0;
+      line-height: 1.4;
+      grid-column: 1 / -1;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    .sticky-buttons {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: transparent;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 16px 0 8px 0;
+      margin-bottom: 8px;
+    }
+
+    button {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button.secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+
+    button.secondary:hover {
+      background: #cbd5e0;
+    }
+
+    button.primary {
+      background: #667eea;
+      color: white;
+    }
+
+    button.primary:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .clear-btn {
+      background: #fed7d7;
+      color: #c53030;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .clear-btn:hover {
+      background: #feb2b2;
+    }
+
+    .reset-default-btn {
+      background: #e6fffa;
+      color: #319795;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #81e6d9;
+      margin-left: auto;
+    }
+
+    .reset-default-btn:hover {
+      background: #b2f5ea;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .time-inputs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .time-label {
+      font-size: 11px;
+      color: #718096;
+      margin: 0 2px;
+    }
+
+    .auto-mode-desc {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      background: none !important;
+      border: none !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="button-row sticky-buttons">
+    <button class="secondary" onclick="window.close()">Cancel</button>
+    <button class="primary" onclick="applySettings()">Set</button>
+  </div>
+
+  <div class="settings-card">
+    <div class="section-header" onclick="toggleSection('timer-config')">
+      <div class="section-toggle" id="timer-config-toggle"></div>
+      <div class="section-title">Timer Configuration</div>
+    </div>
+    
+    <div class="section-content" id="timer-config-content">
+      <div class="input-group">
+        <label>Countdown:</label>
+        <div class="time-inputs">
+          <input type="number" id="time-input" min="0" placeholder="0" />
+          <span class="time-label">min</span>
+          <input type="number" id="seconds-input" min="0" max="59" placeholder="0" step="15" />
+          <span class="time-label">sec</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Red dots:</label>
+        <input type="number" id="red-teams" min="0" placeholder="0" />
+      </div>
+
+      <div class="input-group">
+        <label>Green dots:</label>
+        <input type="number" id="green-teams" min="0" placeholder="0" />
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <div class="section-header" onclick="toggleSection('appearance')">
+      <div class="section-toggle collapsed" id="appearance-toggle"></div>
+      <div class="section-title">Appearance</div>
+      <button class="reset-default-btn" onclick="resetAppearanceToDefault(event)">Reset to Default</button>
+    </div>
+
+    <div class="section-content collapsed" id="appearance-content">
+      <div class="input-group">
+        <label>Background:</label>
+        <div class="input-group-wide">
+          <input type="color" id="background-color" value="#d0f0ff" />
+          <span style="font-size: 11px; color: #718096;">or image:</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label></label>
+        <div class="file-input-wrapper">
+          <input type="file" id="background-file" accept="image/*" />
+          <label for="background-file" class="file-input-label">Choose Image</label>
+        </div>
+      </div>
+      <div id="background-filename" class="filename-display"></div>
+      <div class="image-preview" id="image-preview">
+        <img id="image-thumbnail" class="image-thumbnail" alt="Background preview" />
+        <div class="image-info" id="image-info"></div>
+        <button class="remove-image" id="remove-image" onclick="removeBackgroundImage()">Remove</button>
+      </div>
+
+      <div class="input-group">
+        <label>Font color:</label>
+        <input type="color" id="font-color" value="#000000" />
+      </div>
+
+      <div class="input-group">
+        <label>Font family:</label>
+        <select id="font-family">
+          <option value="Arial">Arial</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Verdana">Verdana</option>
+          <option value="monospace">Monospace</option>
+          <option value="Tahoma">Tahoma</option>
+          <option value="Trebuchet MS">Trebuchet MS</option>
+          <option value="Impact">Impact</option>
+          <option value="Roboto">Roboto</option>
+          <option value="Lato">Lato</option>
+          <option value="Playfair Display">Playfair Display</option>
+          <option value="Oswald">Oswald</option>
+          <option value="Source Sans Pro">Source Sans Pro</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Dot size:</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="dot-size" value="S"> S</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="M"> M</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="L"> L</label>
+          <label class="radio-option"><input type="radio" name="dot-size" value="XL"> XL</label>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Dot style:</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="dot-style" value="circle" checked> Dots</label>
+          <label class="radio-option"><input type="radio" name="dot-style" value="datadog_bits"> Datadog Bits</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Contrast mode:</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="contrast-mode" value="auto" checked> Auto (detect background)</label>
+          <label class="radio-option"><input type="radio" name="contrast-mode" value="light"> Force light text</label>
+          <label class="radio-option"><input type="radio" name="contrast-mode" value="dark"> Force dark text</label>
+        </div>
+      </div>
+      <div class="auto-mode-desc">💡 <strong>Auto mode</strong> will automatically<br>switch between light and dark text based on your background brightness.</div>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <div class="section-header" onclick="toggleSection('session')">
+      <div class="section-toggle collapsed" id="session-toggle"></div>
+      <div class="section-title">Session</div>
+    </div>
+
+    <div class="section-content collapsed" id="session-content">
+      <div class="input-group">
+        <label>Session ID:</label>
+        <div class="input-group-wide">
+          <input type="text" id="session-id" />
+        </div>
+      </div>
+      <div style="margin: 8px 0 0 0; display: flex; gap: 18px; align-items: center;">
+        <a href="#" id="delete-session-link" style="color:#2563eb; text-decoration:underline; font-size:13px;" onclick="showDeleteSessionModal(event)">Delete this session and its settings</a>
+        <a href="#" id="copy-session-link" style="color:#2563eb; text-decoration:underline; font-size:13px;" onclick="copySessionUrl(event)">Copy full session URL</a>
+      </div>
+      <div id="delete-session-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:8px; padding:24px 32px; box-shadow:0 4px 24px rgba(0,0,0,0.15); min-width:280px; text-align:center;">
+          <div style="font-size:16px; font-weight:600; margin-bottom:12px;">Are you sure? Cannot be undone.</div>
+          <button onclick="confirmDeleteSession()" style="background:#e53e3e; color:white; border:none; border-radius:4px; padding:6px 18px; margin-right:10px;">Yes</button>
+          <button onclick="hideDeleteSessionModal()" style="background:#e2e8f0; color:#2d3748; border:none; border-radius:4px; padding:6px 18px;">Cancel</button>
+        </div>
+      </div>
+      <div id="session-toast" style="display:none; position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#2d3748; color:white; padding:10px 24px; border-radius:6px; font-size:13px; z-index:10000;"></div>
+      <div class="session-help">
+        You can save session parameters (countdown, background image, dots, font color, etc.) with a memorable name, for instance TeamGreen25. Access your session directly using a shortcut (e.g., in Slack or Slides) like: https://facilitator-timer-app.onrender.com/?session=TeamGreen25
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentBackgroundImage = null;
+    let prefill = {};
+
+    function toggleSection(sectionId) {
+      const toggle = document.getElementById(`${sectionId}-toggle`);
+      const content = document.getElementById(`${sectionId}-content`);
+      
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggle.classList.remove('collapsed');
+      } else {
+        content.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+      }
+    }
+
+    async function fetchAndPrefillSessionState() {
+      let sessionId = document.getElementById('session-id').value.trim();
+      if (!sessionId) {
+        sessionId = sessionStorage.getItem('session') || '';
+      }
+      if (!sessionId) return;
+      try {
+        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(sessionId)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data) {
+            document.getElementById('time-input').value = data.minutes || 0;
+            document.getElementById('seconds-input').value = data.seconds || 0;
+            document.getElementById('red-teams').value = data.red_teams || 0;
+            document.getElementById('green-teams').value = data.green_teams || 0;
+            if (data.dot_size) {
+              const dotInput = document.querySelector(`input[name='dot-size'][value='${data.dot_size}']`);
+              if (dotInput) dotInput.checked = true;
+            }
+            if (data.dot_style) {
+              const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${data.dot_style}']`);
+              if (dotStyleInput) dotStyleInput.checked = true;
+            }
+            if (data.contrast_mode) {
+              const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${data.contrast_mode}']`);
+              if (contrastInput) contrastInput.checked = true;
+            }
+            if (data.background_color) document.getElementById('background-color').value = data.background_color;
+            if (data.font_color) document.getElementById('font-color').value = data.font_color;
+            if (data.font_family) document.getElementById('font-family').value = data.font_family;
+          }
+        }
+      } catch (err) {
+        // ignore errors
+      }
+    }
+
+    function generateRandomSessionId() {
+      return 'S' + Math.random().toString(36).substr(2, 8).toUpperCase();
+    }
+
+    function showDeleteSessionModal(e) {
+      e.preventDefault();
+      if (!document.getElementById('session-id').value.trim()) {
+        showSessionToast('No session ID to delete.');
+        return;
+      }
+      document.getElementById('delete-session-modal').style.display = 'flex';
+    }
+    function hideDeleteSessionModal() {
+      document.getElementById('delete-session-modal').style.display = 'none';
+    }
+    async function confirmDeleteSession() {
+      const sessionId = document.getElementById('session-id').value.trim();
+      if (!sessionId) {
+        hideDeleteSessionModal();
+        showSessionToast('No session ID to delete.');
+        return;
+      }
+      try {
+        const resp = await fetch(`/api/delete-session?session=${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+        if (resp.ok) {
+          document.getElementById('session-id').value = '';
+          hideDeleteSessionModal();
+          showSessionToast('Session deleted.');
+        } else {
+          showSessionToast('Failed to delete session.');
+        }
+      } catch {
+        showSessionToast('Error deleting session.');
+      }
+    }
+    function copySessionUrl(e) {
+      e.preventDefault();
+      const sessionId = document.getElementById('session-id').value.trim();
+      if (!sessionId) {
+        showSessionToast('No session ID to copy.');
+        return;
+      }
+      const url = `${window.location.origin}/?session=${encodeURIComponent(sessionId)}`;
+      navigator.clipboard.writeText(url).then(() => {
+        showSessionToast('URL copied!');
+      }, () => {
+        showSessionToast('Failed to copy URL.');
+      });
+    }
+    function showSessionToast(msg) {
+      const toast = document.getElementById('session-toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 1800);
+    }
+
+    // Global flag to track if user wants to reset to default
+    let resetToDefaultFlag = false;
+
+    function applySettings() {
+      const minutes = parseInt(document.getElementById("time-input").value, 10);
+      const seconds = parseInt(document.getElementById("seconds-input").value, 10);
+      const red = parseInt(document.getElementById("red-teams").value, 10);
+      const green = parseInt(document.getElementById("green-teams").value, 10);
+      let sessionId = document.getElementById("session-id").value.trim();
+      const dotSize = document.querySelector('input[name="dot-size"]:checked')?.value || "S";
+      const dotStyle = document.querySelector('input[name="dot-style"]:checked')?.value || "circle";
+      const contrastMode = document.querySelector('input[name="contrast-mode"]:checked')?.value || "auto";
+      const backgroundColor = document.getElementById("background-color").value;
+      const fontColor = document.getElementById("font-color").value;
+      const fontFamily = document.getElementById("font-family").value;
+
+      // If reset to default flag is set, always clear session ID
+      if (resetToDefaultFlag) {
+        sessionId = "";
+        document.getElementById("session-id").value = "";
+        console.log("🔄 Reset to default flag is set, clearing session ID");
+      } else if (!sessionId) {
+        // If no session ID and not resetting to default, generate one
+        sessionId = generateRandomSessionId();
+        document.getElementById("session-id").value = sessionId;
+        showSessionToast('New session ID generated for your changes.');
+        console.log("🔄 Generated new session ID:", sessionId);
+      }
+
+      if (window.opener) {
+        window.opener.postMessage({
+          type: "settings",
+          minutes,
+          seconds,
+          red_teams: red,
+          green_teams: green,
+          session_id: sessionId || "",
+          dot_size: dotSize,
+          dot_style: dotStyle,
+          contrast_mode: contrastMode,
+          background_color: backgroundColor,
+          font_color: fontColor,
+          font_family: fontFamily,
+          background_image: currentBackgroundImage
+        }, "*");
+      }
+      // Save session to storage if we have a session ID
+      if (sessionId) {
+        sessionStorage.setItem("session", sessionId);
+      } else {
+        sessionStorage.removeItem("session");
+      }
+      
+      // Update last known JSON state to prevent unnecessary polling
+      lastKnownJsonState = {
+        minutes,
+        seconds,
+        red_teams: red,
+        green_teams: green,
+        session_id: sessionId || "",
+        dot_size: dotSize,
+        dot_style: dotStyle,
+        contrast_mode: contrastMode,
+        background_color: backgroundColor,
+        font_color: fontColor,
+        font_family: fontFamily,
+        background_image: currentBackgroundImage
+      };
+      
+      window.close();
+    }
+
+    // Handle background file upload
+    document.getElementById("background-file").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const thumbnail = document.getElementById("image-thumbnail");
+          thumbnail.src = e.target.result;
+          thumbnail.classList.add("visible");
+          document.getElementById("image-info").textContent = file.name;
+          document.getElementById("image-preview").style.display = "flex";
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append("bg_file", file);
+        
+        try {
+          const sessionId = getCurrentSessionId();
+          const response = await fetch(`/upload-background?session=${encodeURIComponent(sessionId)}`, {
+            method: "POST",
+            body: formData
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            currentBackgroundImage = data.filename;
+            document.getElementById("background-filename").textContent = `Uploaded: ${file.name}`;
+          } else {
+            alert("Failed to upload background image");
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
+          alert("Failed to upload background image");
+        }
+      }
+    });
+
+    // Handle background color change - hide image preview when color is selected
+    document.getElementById("background-color").addEventListener("change", function() {
+      // Hide image preview when background color is selected
+      document.getElementById("image-thumbnail").classList.remove("visible");
+      document.getElementById("image-preview").style.display = "none";
+      currentBackgroundImage = null;
+      document.getElementById("background-filename").textContent = "";
+    });
+
+    function removeBackgroundImage() {
+      currentBackgroundImage = null;
+      document.getElementById("image-thumbnail").classList.remove("visible");
+      document.getElementById("image-preview").style.display = "none";
+      document.getElementById("background-filename").textContent = "";
+      document.getElementById("background-file").value = "";
+    }
+
+    function getCurrentSessionId() {
+      if (window.opener && window.opener.getCurrentSession) {
+        return window.opener.getCurrentSession();
+      }
+      return "default";
+    }
+
+    // Allow Enter/Return to trigger the Set action
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        applySettings();
+      }
+      if (e.key === "Escape" || e.key === "Esc") {
+        e.preventDefault();
+        window.close();
+      }
+    });
+
+    // Custom seconds input behavior - increment/decrement by 15 seconds
+    document.addEventListener("DOMContentLoaded", () => {
+      const secondsInput = document.getElementById("seconds-input");
+      
+      secondsInput.addEventListener("input", (e) => {
+        // Allow manual keyboard input for any value
+        let value = parseInt(e.target.value, 10) || 0;
+        
+        // Ensure value stays within bounds
+        if (value < 0) value = 0;
+        if (value > 59) value = 59;
+        
+        e.target.value = value;
+      });
+      
+      // Override the default step behavior for arrow buttons
+      secondsInput.addEventListener("mousedown", (e) => {
+        // Check if the click is specifically on the up/down arrow buttons
+        const rect = e.target.getBoundingClientRect();
+        const inputWidth = rect.width;
+        const clickX = e.clientX - rect.left;
+        
+        // Only trigger if click is in the rightmost 20px (where the arrows are)
+        if (clickX > inputWidth - 20) {
+          const isUpArrow = e.clientY < rect.top + rect.height / 2;
+          const isDownArrow = e.clientY > rect.top + rect.height / 2;
+          
+          if (isUpArrow || isDownArrow) {
+            e.preventDefault();
+            
+            let currentValue = parseInt(secondsInput.value, 10) || 0;
+            
+            if (isUpArrow) {
+              // Increment by 15 seconds
+              currentValue += 15;
+              if (currentValue > 59) currentValue = 0; // Wrap around to 0
+            } else {
+              // Decrement by 15 seconds
+              currentValue -= 15;
+              if (currentValue < 0) currentValue = 45; // Wrap around to 45
+            }
+            
+            secondsInput.value = currentValue;
+          }
+        }
+        // If click is not on the arrows, let the normal input behavior work
+      });
+    });
+
+    function clearSessionId() {
+      document.getElementById("session-id").value = "";
+      updateDeleteButtonVisibility();
+    }
+
+    let defaultAppearanceValues = null; // Will be loaded from backend
+    let lastKnownJsonState = null;
+    let jsonPollingInterval = null;
+
+    async function loadDefaultAppearanceValues() {
+      try {
+        const response = await fetch('/api/golden-standard');
+        if (response.ok) {
+          const defaultState = await response.json();
+          defaultAppearanceValues = {
+            minutes: defaultState.minutes || 0,
+            seconds: defaultState.seconds || 0,
+            red_teams: defaultState.red_teams || 0,
+            green_teams: defaultState.green_teams || 0,
+            background_color: defaultState.background_color || "#d0f0ff",
+            font_color: defaultState.font_color || "#000000",
+            font_family: defaultState.font_family || "Oswald",
+            background_image: defaultState.background_image || null,
+            dot_size: defaultState.dot_size || "M",
+            dot_style: defaultState.dot_style || "datadog_bits",
+            contrast_mode: defaultState.contrast_mode || "auto"
+          };
+          console.log("Loaded default appearance values:", defaultAppearanceValues);
+        }
+      } catch (err) {
+        console.warn("Failed to load default appearance values:", err);
+        defaultAppearanceValues = {
+          minutes: 0,
+          seconds: 0,
+          red_teams: 0,
+          green_teams: 0,
+          background_color: "#d0f0ff",
+          font_color: "#000000",
+          font_family: "Oswald",
+          background_image: null,
+          dot_size: "M",
+          dot_style: "datadog_bits",
+          contrast_mode: "auto"
+        };
+      }
+    }
+
+    function resetAppearanceToDefault(event) {
+      event.stopPropagation(); // Prevent section toggle
+      
+      // Set the reset to default flag
+      resetToDefaultFlag = true;
+      console.log("🔄 Reset to default flag set to true");
+      
+      // Use dynamically loaded default values
+      const defaultValues = defaultAppearanceValues || {
+        minutes: 0,
+        seconds: 0,
+        red_teams: 0,
+        green_teams: 0,
+        background_color: "#d0f0ff",
+        font_color: "#000000",
+        font_family: "Oswald",
+        background_image: null,
+        dot_size: "M",
+        dot_style: "datadog_bits",
+        contrast_mode: "auto"
+      };
+      
+      // Reset timer fields
+      document.getElementById("time-input").value = defaultValues.minutes;
+      document.getElementById("seconds-input").value = defaultValues.seconds;
+      document.getElementById("red-teams").value = defaultValues.red_teams;
+      document.getElementById("green-teams").value = defaultValues.green_teams;
+      
+      // Reset appearance fields
+      document.getElementById("background-color").value = defaultValues.background_color;
+      document.getElementById("font-color").value = defaultValues.font_color;
+      document.getElementById("font-family").value = defaultValues.font_family;
+      
+      // Reset dot size
+      const dotInput = document.querySelector(`input[name='dot-size'][value='${defaultValues.dot_size}']`);
+      if (dotInput) dotInput.checked = true;
+
+      // Reset dot style
+      const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${defaultValues.dot_style}']`);
+      if (dotStyleInput) dotStyleInput.checked = true;
+      
+      // Reset contrast mode
+      const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${defaultValues.contrast_mode}']`);
+      if (contrastInput) contrastInput.checked = true;
+      
+      // Reset background image - properly clear any uploaded images
+      currentBackgroundImage = defaultValues.background_image;
+      if (defaultValues.background_image) {
+        document.getElementById("background-filename").textContent = `Default: ${defaultValues.background_image}`;
+        document.getElementById("image-thumbnail").src = `/static/${defaultValues.background_image}`;
+        document.getElementById("image-thumbnail").classList.add("visible");
+        document.getElementById("image-info").textContent = defaultValues.background_image;
+        document.getElementById("image-preview").style.display = "flex";
+      } else {
+        // Clear background image display
+        document.getElementById("background-filename").textContent = "";
+        document.getElementById("image-thumbnail").classList.remove("visible");
+        document.getElementById("image-preview").style.display = "none";
+      }
+      document.getElementById("background-file").value = "";
+      
+      // Clear session ID to indicate we're in default mode
+      document.getElementById("session-id").value = "";
+      sessionStorage.removeItem("session");
+      updateDeleteButtonVisibility();
+      
+      // Send reset message to main timer page to clear URL and storage
+      setTimeout(() => {
+        if (window.opener && !window.opener.closed) {
+          console.log("🔄 Sending reset-to-default message to opener");
+          window.opener.postMessage({
+            type: "reset-to-default"
+          }, "*");
+          console.log("🔄 Reset message sent");
+        } else {
+          console.warn("🔄 No opener window found or opener is closed");
+        }
+      }, 100); // Small delay to ensure everything is ready
+      
+      // Show confirmation
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = "✓ Reset";
+      btn.style.background = "#c6f6d5";
+      btn.style.color = "#22543d";
+      btn.style.borderColor = "#9ae6b4";
+      
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.style.borderColor = "";
+      }, 1500);
+    }
+
+    function applyAppearancePreview() {
+      // This function can be called after changing background image/color in the settings
+      const bgImage = currentBackgroundImage;
+      const bgColor = document.getElementById("background-color").value;
+      if (bgImage) {
+        const img = new window.Image();
+        img.onload = function() {
+          document.body.style.backgroundImage = `url('/static/${bgImage}')`;
+          document.body.style.backgroundSize = "cover";
+          document.body.style.backgroundRepeat = "no-repeat";
+          document.body.style.backgroundPosition = "center";
+          document.body.style.backgroundColor = "";
+        };
+        img.onerror = function() {
+          document.body.style.backgroundImage = "none";
+          document.body.style.backgroundColor = bgColor;
+        };
+        img.src = `/static/${bgImage}`;
+      } else {
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = bgColor;
+      }
+    }
+
+    // Listen for window position message and prefill session ID if provided
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "json-changed") {
+        console.log("🔄 Received JSON change notification:", event.data);
+        // Refresh the settings form with new data
+        refreshSettingsFromJson(event.data.sessionState);
+      } else if (event.data?.type === "position-settings-window") {
+        const { left, top } = event.data;
+        window.moveTo(left, top);
+        if (event.data.prefill_session_id !== undefined) {
+          const sessionField = document.getElementById("session-id");
+          if (sessionField) {
+            sessionField.value = event.data.prefill_session_id;
+            prefill.session_id = true;
+          }
+        }
+        // Prefill timer and other fields if provided
+        if (event.data.prefill_minutes !== undefined) {
+          document.getElementById("time-input").value = event.data.prefill_minutes;
+          prefill.minutes = true;
+        }
+        if (event.data.prefill_seconds !== undefined) {
+          document.getElementById("seconds-input").value = event.data.prefill_seconds;
+          prefill.seconds = true;
+        }
+        if (event.data.prefill_red_teams !== undefined) {
+          document.getElementById("red-teams").value = event.data.prefill_red_teams;
+          prefill.red_teams = true;
+        }
+        if (event.data.prefill_green_teams !== undefined) {
+          document.getElementById("green-teams").value = event.data.prefill_green_teams;
+          prefill.green_teams = true;
+        }
+        if (event.data.prefill_dot_size) {
+          const dotInput = document.querySelector(`input[name='dot-size'][value='${event.data.prefill_dot_size}']`);
+          if (dotInput) dotInput.checked = true;
+          prefill.dot_size = true;
+        }
+        if (event.data.prefill_dot_style) {
+          const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${event.data.prefill_dot_style}']`);
+          if (dotStyleInput) dotStyleInput.checked = true;
+          prefill.dot_style = true;
+        }
+        if (event.data.prefill_contrast_mode) {
+          const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${event.data.prefill_contrast_mode}']`);
+          if (contrastInput) contrastInput.checked = true;
+          prefill.contrast_mode = true;
+        }
+        if (event.data.prefill_background_color) {
+          document.getElementById("background-color").value = event.data.prefill_background_color;
+          prefill.background_color = true;
+        }
+        if (event.data.prefill_font_color) {
+          document.getElementById("font-color").value = event.data.prefill_font_color;
+          prefill.font_color = true;
+        }
+        if (event.data.prefill_font_family) {
+          document.getElementById("font-family").value = event.data.prefill_font_family;
+          prefill.font_family = true;
+        }
+        if (event.data.prefill_background_image) {
+          currentBackgroundImage = event.data.prefill_background_image;
+          document.getElementById("background-filename").textContent = `Current: ${event.data.prefill_background_image}`;
+          // Show thumbnail for existing background image
+          const thumbnail = document.getElementById("image-thumbnail");
+          thumbnail.src = `/static/${event.data.prefill_background_image}`;
+          thumbnail.classList.add("visible");
+          document.getElementById("image-info").textContent = event.data.prefill_background_image;
+          document.getElementById("image-preview").style.display = "flex";
+          prefill.background_image = true;
+        }
+      }
+    });
+
+    // Function to clear reset flag when user makes changes
+    function clearResetFlag() {
+      if (resetToDefaultFlag) {
+        resetToDefaultFlag = false;
+        console.log("🔄 Reset to default flag cleared due to user modification");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const sessionInput = document.getElementById("session-id");
+      let session = sessionStorage.getItem("session") || "";
+      const urlSess = new URLSearchParams(window.location.search).get("session");
+      if (urlSess) {
+        session = urlSess;
+        sessionStorage.setItem("session", session);
+      }
+      sessionInput.value = session;
+      fetchAndPrefillSessionState();
+      updateDeleteButtonVisibility();
+      loadDefaultAppearanceValues();
+      
+      // Start JSON polling as fallback for synchronization
+      startJsonPolling();
+      
+      // Add event listeners to clear reset flag when user makes changes
+      const inputs = [
+        "time-input", "seconds-input", "red-teams", "green-teams",
+        "background-color", "font-color", "font-family", "background-file"
+      ];
+      
+      inputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.addEventListener("input", clearResetFlag);
+          element.addEventListener("change", clearResetFlag);
+        }
+      });
+      
+      // Add listeners for radio buttons
+      const radioGroups = ["dot-size", "dot-style", "contrast-mode"];
+      radioGroups.forEach(name => {
+        const radios = document.querySelectorAll(`input[name="${name}"]`);
+        radios.forEach(radio => {
+          radio.addEventListener("change", clearResetFlag);
+        });
+      });
+    });
+
+    function updateDeleteButtonVisibility() {
+      const sessionId = document.getElementById("session-id").value.trim();
+      const deleteBtn = document.getElementById("delete-session-link");
+      if (deleteBtn) {
+        deleteBtn.style.opacity = sessionId ? '1' : '0.5';
+        deleteBtn.style.pointerEvents = sessionId ? 'auto' : 'none';
+      }
+    }
+    
+    // Function to refresh settings form from JSON data
+    function refreshSettingsFromJson(data) {
+      if (!data) return;
+      
+      console.log("🔄 Refreshing settings form from JSON:", data);
+      
+      // Update form fields with new data
+      if (data.minutes !== undefined) {
+        document.getElementById("time-input").value = data.minutes || 0;
+      }
+      if (data.seconds !== undefined) {
+        document.getElementById("seconds-input").value = data.seconds || 0;
+      }
+      if (data.red_teams !== undefined) {
+        document.getElementById("red-teams").value = data.red_teams || 0;
+      }
+      if (data.green_teams !== undefined) {
+        document.getElementById("green-teams").value = data.green_teams || 0;
+      }
+      if (data.dot_size) {
+        const dotInput = document.querySelector(`input[name='dot-size'][value='${data.dot_size}']`);
+        if (dotInput) dotInput.checked = true;
+      }
+      if (data.dot_style) {
+        const dotStyleInput = document.querySelector(`input[name='dot-style'][value='${data.dot_style}']`);
+        if (dotStyleInput) dotStyleInput.checked = true;
+      }
+      if (data.contrast_mode) {
+        const contrastInput = document.querySelector(`input[name='contrast-mode'][value='${data.contrast_mode}']`);
+        if (contrastInput) contrastInput.checked = true;
+      }
+      if (data.background_color) {
+        document.getElementById("background-color").value = data.background_color;
+      }
+      if (data.font_color) {
+        document.getElementById("font-color").value = data.font_color;
+      }
+      if (data.font_family) {
+        document.getElementById("font-family").value = data.font_family;
+      }
+      if (data.background_image !== undefined) {
+        currentBackgroundImage = data.background_image;
+        if (data.background_image) {
+          document.getElementById("background-filename").textContent = `Current: ${data.background_image}`;
+          const thumbnail = document.getElementById("image-thumbnail");
+          thumbnail.src = `/static/${data.background_image}`;
+          thumbnail.classList.add("visible");
+          document.getElementById("image-info").textContent = data.background_image;
+          document.getElementById("image-preview").style.display = "flex";
+        } else {
+          document.getElementById("background-filename").textContent = "";
+          document.getElementById("image-thumbnail").classList.remove("visible");
+          document.getElementById("image-preview").style.display = "none";
+        }
+      }
+      if (data.session_id !== undefined) {
+        document.getElementById("session-id").value = data.session_id || "";
+        updateDeleteButtonVisibility();
+      }
+      
+      console.log("✅ Settings form refreshed from JSON");
+    }
+    
+    // JSON polling functions for fallback synchronization
+    async function checkForJsonChanges() {
+      try {
+        const sessionId = document.getElementById("session-id").value.trim();
+        if (!sessionId) return; // Skip for default session
+        
+        const resp = await fetch(`/api/session-state?session=${encodeURIComponent(sessionId)}`);
+        if (resp.ok) {
+          const currentJsonState = await resp.json();
+          
+          // Compare with last known state
+          if (lastKnownJsonState && JSON.stringify(currentJsonState) !== JSON.stringify(lastKnownJsonState)) {
+            console.log("🔄 JSON changed externally (polling), refreshing settings form");
+            refreshSettingsFromJson(currentJsonState);
+            lastKnownJsonState = currentJsonState;
+          } else if (!lastKnownJsonState) {
+            // Initialize last known state
+            lastKnownJsonState = currentJsonState;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not check for JSON changes (polling):", err);
+      }
+    }
+    
+    function startJsonPolling() {
+      if (jsonPollingInterval) {
+        clearInterval(jsonPollingInterval);
+      }
+      jsonPollingInterval = setInterval(checkForJsonChanges, 5000); // Check every 5 seconds
+    }
+    
+    function stopJsonPolling() {
+      if (jsonPollingInterval) {
+        clearInterval(jsonPollingInterval);
+        jsonPollingInterval = null;
+      }
+    }
+    
+    // Clean up polling when window closes
+    window.addEventListener("beforeunload", () => {
+      stopJsonPolling();
+    });
+  </script>
+</body>
+</html>
