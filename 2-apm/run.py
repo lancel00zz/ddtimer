@@ -17,14 +17,11 @@ class DatadogJSONFormatter(logging.Formatter):
         }
         
         # ddtrace injects these attributes when DD_LOGS_INJECTION=true
-        # Convert to integers for proper correlation (Datadog expects numeric trace IDs)
+        # ddtrace 2.x uses 128-bit trace IDs as hex strings - pass as-is for Datadog correlation
         if hasattr(record, 'dd.trace_id'):
-            trace_id = getattr(record, 'dd.trace_id')
-            # Convert to int if it's not 0 (0 means no trace context)
-            log_data['dd.trace_id'] = int(trace_id) if trace_id != 0 else 0
+            log_data['dd.trace_id'] = str(getattr(record, 'dd.trace_id'))
         if hasattr(record, 'dd.span_id'):
-            span_id = getattr(record, 'dd.span_id')
-            log_data['dd.span_id'] = int(span_id) if span_id != 0 else 0
+            log_data['dd.span_id'] = str(getattr(record, 'dd.span_id'))
         if hasattr(record, 'dd.service'):
             log_data['dd.service'] = getattr(record, 'dd.service')
         if hasattr(record, 'dd.env'):
