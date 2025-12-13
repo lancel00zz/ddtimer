@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>QR Code</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #2d3748;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+    }
+    .qr-card {
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      margin-top: 0;
+      padding: 32px 32px 24px 32px;
+      width: 400px;
+      max-width: 95vw;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+    }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      letter-spacing: 0.5px;
+      color: #22223b;
+      text-align: center;
+    }
+    .qr-image {
+      width: 280px;
+      height: 280px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .url-section {
+      text-align: center;
+      margin-top: 16px;
+    }
+    .url-label {
+      font-size: 0.95rem;
+      color: #718096;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .url-display {
+      font-family: 'Menlo', 'Consolas', 'Liberation Mono', 'monospace';
+      font-size: 0.85rem;
+      color: #4a5568;
+      background: #f7fafc;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      word-break: break-all;
+      margin-bottom: 16px;
+    }
+    .url-display {
+      font-family: 'Menlo', 'Consolas', 'Liberation Mono', 'monospace';
+      font-size: 0.85rem;
+      color: #4a5568;
+      background: #f7fafc;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      word-break: break-all;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .url-display:hover {
+      background: #edf2f7;
+      border-color: #cbd5e0;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="qr-card">
+    <h1>QR Code</h1>
+    <img class="qr-image" src="/qr-image" alt="QR Code" />
+    
+    <div class="url-section">
+      <div class="url-label">or visit manually:</div>
+      <div class="url-display" id="url-line">...</div>
+    </div>
+  </div>
+
+  <script>
+    let sessionId = null;
+
+    // ESC key handler
+    function handleEscToClose(e) {
+      if (e.key === "Escape" || e.key === "Esc") {
+        console.log('ESC pressed, closing QR window');
+        e.preventDefault();
+        window.close();
+      }
+    }
+    document.addEventListener("keydown", handleEscToClose, true);
+    window.addEventListener("keydown", handleEscToClose, true);
+
+    // Make URL clickable to simulate QR visit
+    document.getElementById("url-line").addEventListener("click", async () => {
+      if (!sessionId) {
+        alert("No session ID available for testing");
+        return;
+      }
+      
+      const testUrl = `${window.location.origin}/done?session=${encodeURIComponent(sessionId)}`;
+      console.log('Testing visit to:', testUrl);
+      
+      try {
+        const response = await fetch(testUrl, { method: "GET" });
+        if (response.ok) {
+          console.log('Test visit successful');
+          // Show visual feedback
+          const urlElement = document.getElementById("url-line");
+          const originalBackground = urlElement.style.background;
+          const originalColor = urlElement.style.color;
+          urlElement.style.background = "#c6f6d5";
+          urlElement.style.color = "#22543d";
+          
+          setTimeout(() => {
+            urlElement.style.background = originalBackground;
+            urlElement.style.color = originalColor;
+          }, 2000);
+        } else {
+          console.error('Test visit failed:', response.status);
+          alert(`Test visit failed: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Test visit error:', error);
+        alert('Test visit failed: ' + error.message);
+      }
+    });
+
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "position-qr-window") {
+        const { left, top, session_id } = event.data;
+        if (session_id) {
+          sessionId = session_id;
+        }
+        window.moveTo(left, top);
+
+        const urlBase = `${window.location.origin}/done`;
+        const finalUrl = sessionId ? `${urlBase}?session=${encodeURIComponent(sessionId)}` : urlBase;
+
+        document.querySelector(".qr-image").src = `/qr-image${sessionId ? "?session=" + encodeURIComponent(sessionId) : ""}`;
+        document.getElementById("url-line").textContent = finalUrl;
+      }
+    });
+
+    // Log to confirm script is running
+    console.log('qr-popup: script loaded');
+  </script>
+</body>
+</html>
