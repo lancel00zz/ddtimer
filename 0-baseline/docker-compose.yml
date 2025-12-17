@@ -1,4 +1,4 @@
-## APM Lab - Step 0: Clean Environment
+## APM Lab - 0-Baseline: Clean Environment
 ## No Datadog Agent, No APM instrumentation
 ## This is the DEVELOPMENT version - builds locally and mounts code
 name: apm-lab-0-baseline
